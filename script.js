@@ -14,7 +14,6 @@ const firebaseConfig = {
     authDomain: "genart-a693a.firebaseapp.com",
     projectId: "genart-a693a",
     storageBucket: "genart-a693a.firebasestorage.app",
-    messagingSenderId: "96958671615",
     appId: "1:96958671615:web:6a0d3aa6bf42c6bda17aca",
     measurementId: "G-EDCW8VYXY6"
 };
@@ -30,6 +29,7 @@ let googleProvider;
 let currentUser = null; // Stores Firebase User object
 let freeGenerationsLeft = localStorage.getItem('freeGenerationsLeft') ? parseInt(localStorage.getItem('freeGenerationsLeft')) : 3;
 let prompt = ''; // For image generator
+let negativePrompt = ''; // For negative prompt
 let imageUrl = ''; // For generated image
 let loading = false; // For image generation
 let currentError = ''; // Error message for display
@@ -43,6 +43,7 @@ let enhancedPrompt = '';
 let loadingEnhancePrompt = false;
 let variationIdeas = [];
 let loadingVariationIdeas = false;
+
 
 // IMPORTANT: Your Google Cloud API Key for Imagen/Gemini (Declared at top level)
 // REPLACE "YOUR_ACTUAL_GENERATED_API_KEY_HERE_PASTE_YOUR_KEY_HERE" WITH THE KEY YOU OBTAINED FROM GOOGLE CLOUD CONSOLE
@@ -59,6 +60,7 @@ let persistentDebugMessage;
 let closeDebugMessageBtn;
 
 let promptInput;
+let negativePromptInput; // New
 let copyPromptBtn;
 let clearPromptBtn;
 let aspectRatioSelectionDiv;
@@ -70,6 +72,8 @@ let downloadBtn;
 let errorDisplay;
 let imageDisplayContainer;
 let generatedImageElement;
+let generatedImageWrapper; // New reference for the image's parent div
+
 let enhancedPromptDisplay;
 let enhancedPromptText;
 let variationIdeasDisplay;
@@ -415,6 +419,7 @@ function populateAspectRatioRadios() {
                 radioInput.addEventListener('change', (e) => {
                     aspectRatio = e.target.value;
                     console.log(Date.now(), "Event: Aspect ratio changed to:", aspectRatio);
+                    updateImageWrapperAspectRatio(); // Update wrapper aspect ratio immediately
                 });
             }
             aspectRatioSelectionDiv.appendChild(label);
@@ -433,25 +438,35 @@ async function setPage(newPage) {
         return;
     }
 
-    allPageElements.forEach(element => {
-        if (element) {
-            element.classList.add('hidden');
-            element.classList.remove('animate-fade-in-up');
-        }
-    });
+    // Apply fade-out class to current page
+    const oldPageElement = allPageElements.find(el => !el.classList.contains('hidden'));
+    if (oldPageElement) {
+        oldPageElement.classList.remove('animate-fade-in-up');
+        oldPageElement.classList.add('animate-fade-out'); // Assuming you have a fade-out animation in CSS
+        // Hide after animation
+        setTimeout(() => {
+            oldPageElement.classList.add('hidden');
+            oldPageElement.classList.remove('animate-fade-out');
+        }, 500); // Match CSS transition duration
+    }
+
 
     let newPageElement;
     if (newPage === 'home') {
         newPageElement = homePageElement;
     } else if (newPage === 'generator') {
         newPageElement = generatorPageElement;
+        updateImageWrapperAspectRatio(); // Ensure correct aspect ratio when navigating to generator page
     }
 
     if (newPageElement) {
-        newPageElement.classList.remove('hidden');
-        void newPageElement.offsetWidth; // Trigger reflow for animation
-        newPageElement.classList.add('animate-fade-in-up');
-        console.log(Date.now(), `setPage: Displayed page '${newPage}' and applied animation.`);
+        // Show the new page and apply fade-in after a slight delay if an old page was fading out
+        setTimeout(() => {
+            newPageElement.classList.remove('hidden');
+            void newPageElement.offsetWidth; // Trigger reflow for animation
+            newPageElement.classList.add('animate-fade-in-up');
+            console.log(Date.now(), `setPage: Displayed page '${newPage}' and applied animation.`);
+        }, oldPageElement ? 200 : 0); // Small delay if an old page is fading out
     } else {
         console.error(Date.now(), `setPage: New page element for '${newPage}' not found.`);
     }
@@ -467,7 +482,7 @@ function updateUI() {
     const interactiveElements = [
         homePageElement, generatorPageElement, logoBtn,
         hamburgerBtn, closeMobileMenuBtn, mobileMenuOverlay,
-        startCreatingBtn, promptInput, copyPromptBtn, clearPromptBtn, generateBtn,
+        startCreatingBtn, promptInput, negativePromptInput, copyPromptBtn, clearPromptBtn, generateBtn,
         enhanceBtn, variationBtn, useEnhancedPromptBtn,
         downloadBtn, signInBtnDesktop, signOutBtnDesktop,
         signInBtnMobile, signOutBtnMobile, modalSignInBtn,
@@ -517,6 +532,7 @@ function updateUI() {
 function updateGeneratorPageUI() {
     console.log(Date.now(), "updateGeneratorPageUI: Updating dynamic generator UI.");
     if (promptInput) promptInput.value = prompt;
+    if (negativePromptInput) negativePromptInput.value = negativePrompt; // Update negative prompt input
 
     if (freeGenerationsDisplay) {
         if (currentUser) {
@@ -561,9 +577,12 @@ function updateGeneratorPageUI() {
         generateBtn.classList.toggle('bg-gray-700', loading);
         generateBtn.classList.toggle('cursor-not-allowed', loading);
         generateBtn.classList.toggle('bg-gradient-to-r', !loading);
+        generateBtn.classList.toggle('from-blue-700', !loading);
+        generateBtn.classList.toggle('to-indigo-800', !loading);
+        generateBtn.classList.toggle('hover:from-blue-800', !loading);
+        generateBtn.classList.toggle('hover:to-indigo-900', !loading);
 
-        generateBtn.classList.remove('from-blue-700', 'to-indigo-800', 'hover:from-blue-800', 'hover:to-indigo-900',
-                                   'from-red-600', 'to-red-700', 'hover:from-red-700', 'hover:to-red-800',
+        generateBtn.classList.remove('from-red-600', 'to-red-700', 'hover:from-red-700', 'hover:to-red-800',
                                    'from-gray-600', 'to-gray-700', 'hover:from-gray-700', 'hover:to-gray-800');
 
 
@@ -593,7 +612,6 @@ function updateGeneratorPageUI() {
             imageDisplayContainer.classList.remove('hidden');
             generatedImageElement.src = imageUrl;
             generatedImageElement.alt = `AI generated image based on prompt: ${prompt}`;
-            generatedImageElement.style = getImageDisplayStyles();
             generatedImageElement.classList.add('animate-image-reveal');
             console.log(Date.now(), "updateGeneratorPageUI: Image container shown with new image.");
             // NEW DEBUG LOGS FOR IMAGE DISPLAY
@@ -628,6 +646,10 @@ function updateGeneratorPageUI() {
     if (enhancedPromptDisplay && enhancedPromptText) {
         enhancedPromptText.textContent = enhancedPrompt;
         enhancedPromptDisplay.classList.toggle('hidden', !enhancedPrompt);
+        // Show/hide use-enhanced-prompt-btn based on enhancedPrompt presence
+        if (useEnhancedPromptBtn) {
+            useEnhancedPromptBtn.classList.toggle('hidden', !enhancedPrompt);
+        }
         console.log(Date.now(), "updateGeneratorPageUI: Enhanced prompt display updated. Hidden:", !enhancedPrompt);
     }
 
@@ -657,6 +679,200 @@ function updateGeneratorPageUI() {
         console.log(Date.now(), "updateGeneratorPageUI: Variation ideas display updated. Hidden:", variationIdeas.length === 0);
     }
 }
+
+/**
+ * Dynamically sets the padding-bottom on the image wrapper to maintain aspect ratio.
+ * This creates a container that holds the image without stretching it.
+ */
+function updateImageWrapperAspectRatio() {
+    if (!generatedImageWrapper) {
+        console.warn(Date.now(), "updateImageWrapperAspectRatio: generatedImageWrapper not found.");
+        return;
+    }
+
+    let paddingBottomPercentage;
+    switch (aspectRatio) {
+        case '1:1': paddingBottomPercentage = '100%'; break; // Height = Width
+        case '4:5': paddingBottomPercentage = '125%'; break; // Height = 5/4 * Width
+        case '9:16': paddingBottomPercentage = '177.77%'; break; // Height = 16/9 * Width
+        case '16:9': paddingBottomPercentage = '56.25%'; break; // Height = 9/16 * Width
+        default: paddingBottomPercentage = '100%'; break; // Default to square
+    }
+
+    // Apply the padding-bottom hack to the wrapper
+    generatedImageWrapper.style.position = 'relative';
+    generatedImageWrapper.style.width = '100%'; // Ensure it takes full width
+    generatedImageWrapper.style.paddingBottom = paddingBottomPercentage;
+    generatedImageWrapper.style.height = '0'; // Crucial for padding-bottom hack
+
+    // Ensure the image inside is absolutely positioned to fill this new container
+    if (generatedImageElement) {
+        generatedImageElement.style.position = 'absolute';
+        generatedImageElement.style.top = '0';
+        generatedImageElement.style.left = '0';
+        generatedImageElement.style.width = '100%';
+        generatedImageElement.style.height = '100%';
+        generatedImageElement.style.objectFit = 'contain'; // This is key: image fits without stretching
+    }
+    console.log(Date.now(), `updateImageWrapperAspectRatio: Wrapper aspect ratio set to ${aspectRatio} (${paddingBottomPercentage}).`);
+}
+
+/**
+ * Calls the Gemini API to enhance the current prompt for more detailed and versatile image generation.
+ */
+async function enhancePrompt() {
+    console.log(Date.now(), "enhancePrompt: Function called.");
+    clearError();
+
+    if (!IMAGEN_GEMINI_API_KEY || IMAGEN_GEMINI_API_KEY === "YOUR_ACTUAL_GENERATED_API_KEY_HERE_PASTE_YOUR_KEY_HERE") {
+        setError('API Key is not configured for prompt enhancement. Please replace "YOUR_ACTUAL_GENERATED_API_KEY_HERE_PASTE_YOUR_KEY_HERE" in script.js with your actual key obtained from Google Cloud Console.');
+        updateUI();
+        console.error(Date.now(), "enhancePrompt: API Key not configured.");
+        showToast("API Key missing for prompt enhancement. Check console.", "error");
+        return;
+    }
+
+    if (!prompt.trim()) {
+        setError('Please enter a prompt to enhance.');
+        updateUI();
+        showToast("Enter a prompt to enhance.", "info");
+        return;
+    }
+
+    loadingEnhancePrompt = true;
+    enhancedPrompt = ''; // Clear previous enhanced prompt
+    updateUI();
+    showToast("Enhancing your prompt...", "info");
+    console.time("enhancePromptAPI");
+
+    try {
+        const promptToEnhance = promptInput.value; // Ensure we use the current value from the input
+        const geminiPrompt = `
+            You are an expert prompt engineer for AI image generation.
+            Take the following user prompt and expand it into a highly detailed, descriptive, and creative prompt for an image generation model.
+            Focus on adding details that enhance the visual quality, atmosphere, and specific characteristics of the subject, without forcing a "photorealistic" style unless explicitly requested.
+            Consider adding:
+            - Specific descriptive adjectives for the subject and scene.
+            - Details about lighting (e.g., "soft morning light", "dramatic chiaroscuro", "neon glow").
+            - Environmental details (e.g., "lush foliage", "ancient cobblestones", "futuristic cityscape").
+            - Artistic style suggestions if appropriate (e.g., "oil painting", "concept art", "pixel art", "surrealist", "anime style").
+            - Compositional elements (e.g., "wide shot", "close-up", "dynamic angle").
+            - Textures, colors, and mood.
+            - Quality keywords like "ultra-detailed", "high resolution", "intricate".
+
+            Do not include any conversational text, just the enhanced prompt.
+            Original prompt: "${promptToEnhance}"
+        `;
+
+        const payload = { contents: [{ role: "user", parts: [{ text: geminiPrompt }] }] };
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${IMAGEN_GEMINI_API_KEY}`;
+
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`Gemini API error: ${response.status} - ${errorData.error.message || 'Unknown error'}`);
+        }
+
+        const result = await response.json();
+        if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+            enhancedPrompt = result.candidates[0].content.parts[0].text.trim();
+            showToast("Prompt enhanced successfully!", "success");
+            console.log(Date.now(), "enhancePrompt: Enhanced prompt received:", enhancedPrompt);
+        } else {
+            setError('Failed to enhance prompt. No response from AI.');
+            showToast('Failed to enhance prompt.', "error");
+            console.error(Date.now(), 'enhancePrompt: AI response missing content:', result);
+        }
+    } catch (e) {
+        setError(`Error enhancing prompt: ${e.message || 'Unknown error'}.`);
+        showToast(`Prompt enhancement failed: ${e.message}`, "error");
+        console.error(Date.now(), 'enhancePrompt: Error during prompt enhancement:', e);
+    } finally {
+        loadingEnhancePrompt = false;
+        updateUI();
+        console.timeEnd("enhancePromptAPI");
+    }
+}
+
+/**
+ * Calls the Gemini API to generate creative variation ideas for the current prompt.
+ */
+async function generateVariationIdeas() {
+    console.log(Date.now(), "generateVariationIdeas: Function called.");
+    clearError();
+
+    if (!IMAGEN_GEMINI_API_KEY || IMAGEN_GEMINI_API_KEY === "YOUR_ACTUAL_GENERATED_API_KEY_HERE_PASTE_YOUR_KEY_HERE") {
+        setError('API Key is not configured for variation ideas. Please replace "YOUR_ACTUAL_GENERATED_API_KEY_HERE_PASTE_YOUR_KEY_HERE" in script.js with your actual key obtained from Google Cloud Console.');
+        updateUI();
+        console.error(Date.now(), "generateVariationIdeas: API Key not configured.");
+        showToast("API Key missing for variation ideas. Check console.", "error");
+        return;
+    }
+
+    if (!prompt.trim()) {
+        setError('Please enter a prompt to get variation ideas.');
+        updateUI();
+        showToast("Enter a prompt to get ideas.", "info");
+        return;
+    }
+
+    loadingVariationIdeas = true;
+    variationIdeas = []; // Clear previous ideas
+    updateUI();
+    showToast("Generating variation ideas...", "info");
+    console.time("generateVariationIdeasAPI");
+
+    try {
+        const promptForIdeas = promptInput.value; // Ensure we use the current value from the input
+        const geminiPrompt = `
+            Generate 3-5 distinct creative variations for the following image generation prompt.
+            Each variation should be a concise, single sentence, focusing on different styles, moods, or minor subject alterations.
+            Present them as a numbered list. Do not include any conversational text, just the numbered list.
+            Original prompt: "${promptForIdeas}"
+        `;
+
+        const payload = { contents: [{ role: "user", parts: [{ text: geminiPrompt }] }] };
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${IMAGEN_GEMINI_API_KEY}`;
+
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`Gemini API error: ${response.status} - ${errorData.error.message || 'Unknown error'}`);
+        }
+
+        const result = await response.json();
+        if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+            const rawIdeas = result.candidates[0].content.parts[0].text.trim();
+            // Parse the numbered list into an array
+            variationIdeas = rawIdeas.split('\n').map(line => line.replace(/^\d+\.\s*/, '').trim()).filter(line => line.length > 0);
+            showToast("Variation ideas generated!", "success");
+            console.log(Date.now(), "generateVariationIdeas: Ideas received:", variationIdeas);
+        } else {
+            setError('Failed to generate variation ideas. No response from AI.');
+            showToast('Failed to generate ideas.', "error");
+            console.error(Date.now(), 'generateVariationIdeas: AI response missing content:', result);
+        }
+    } catch (e) {
+        setError(`Error generating variation ideas: ${e.message || 'Unknown error'}.`);
+        showToast(`Idea generation failed: ${e.message}`, "error");
+        console.error(Date.now(), 'generateVariationIdeas: Error during idea generation:', e);
+    } finally {
+        loadingVariationIdeas = false;
+        updateUI();
+        console.timeEnd("generateVariationIdeasAPI");
+    }
+}
+
 
 async function generateImage() {
     console.log(Date.now(), "generateImage: Function called.");
@@ -703,24 +919,43 @@ async function generateImage() {
     console.time("imageGenerationAPI");
 
     try {
-        let finalPrompt = prompt;
+        let finalPrompt = promptInput.value; // Use current value from input
+        
         const textKeywords = ['text', 'number', 'letter', 'font', 'word', 'digits', 'characters'];
-        const containsTextKeyword = textKeywords.some(keyword => prompt.toLowerCase().includes(keyword));
+        const containsTextKeyword = textKeywords.some(keyword => finalPrompt.toLowerCase().includes(keyword));
 
         if (containsTextKeyword) {
             finalPrompt += ", clear, legible, sharp, high-resolution text, sans-serif font, precisely rendered, not distorted, no gibberish, accurate spelling, crisp edges";
             console.log(Date.now(), "generateImage: Added text-specific enhancements to prompt.");
         }
 
+        // --- ENHANCED ASPECT RATIO PROMPT ENGINEERING ---
         let aspectRatioInstruction = '';
         switch (aspectRatio) {
-            case '1:1': aspectRatioInstruction = ', square aspect ratio'; break;
-            case '4:5': aspectRatioInstruction = ', portrait 4:5 aspect ratio'; break;
-            case '9:16': aspectRatioInstruction = ', vertical 9:16 aspect ratio'; break;
-            case '16:9': aspectRatioInstruction = ', horizontal 16:9 aspect ratio'; break;
+            case '1:1': 
+                aspectRatioInstruction = ', square format, 1:1 aspect ratio, balanced composition, perfect square, symmetrical frame'; 
+                break;
+            case '4:5': 
+                aspectRatioInstruction = ', portrait orientation, 4:5 aspect ratio, tall and narrow composition, vertical format, ideal for social media portrait posts'; 
+                break;
+            case '9:16': 
+                aspectRatioInstruction = ', ultra-portrait orientation, 9:16 aspect ratio, extremely tall and narrow composition, vertical smartphone screen format, full-screen mobile display'; 
+                break;
+            case '16:9': 
+                aspectRatioInstruction = ', landscape orientation, 16:9 aspect ratio, wide and cinematic composition, horizontal widescreen format, film aspect ratio'; 
+                break;
         }
         finalPrompt += aspectRatioInstruction;
-        console.log(Date.now(), "generateImage: Final prompt for API:", finalPrompt);
+        // --- END ENHANCED ASPECT RATIO PROMPT ENGINEERING ---
+
+        // --- ADD NEGATIVE PROMPT ---
+        if (negativePromptInput && negativePromptInput.value.trim()) {
+            finalPrompt += ` --no ${negativePromptInput.value.trim()}`;
+            console.log(Date.now(), "generateImage: Added negative prompt.");
+        }
+        // --- END ADD NEGATIVE PROMPT ---
+
+        console.log(Date.now(), "generateImage: Final prompt for Imagen API:", finalPrompt);
 
 
         const payload = { instances: { prompt: finalPrompt }, parameters: { "sampleCount": 1 } };
@@ -735,7 +970,7 @@ async function generateImage() {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(`API error: ${response.status} - ${errorData.error.message || 'Unknown error'}`);
+            throw new Error(`Imagen API error: ${response.status} - ${errorData.error.message || 'Unknown error'}`);
         }
 
         const result = await response.json();
@@ -827,14 +1062,41 @@ function clearError() {
     currentError = '';
 }
 
-function getImageDisplayStyles() {
-    switch (aspectRatio) {
-        case '1:1': return 'width: 100%; height: auto; aspect-ratio: 1 / 1;';
-        case '4:5': return 'width: 100%; height: auto; aspect-ratio: 4 / 5;';
-        case '9:16': return 'width: 100%; height: auto; aspect-ratio: 9 / 16;';
-        case '16:9': return 'width: 100%; height: auto; aspect-ratio: 16 / 9;';
-        default: return 'width: 100%; height: auto;';
+/**
+ * Dynamically sets the padding-bottom on the image wrapper to maintain aspect ratio.
+ * This creates a container that holds the image without stretching it.
+ */
+function updateImageWrapperAspectRatio() {
+    if (!generatedImageWrapper) {
+        console.warn(Date.now(), "updateImageWrapperAspectRatio: generatedImageWrapper not found.");
+        return;
     }
+
+    let paddingBottomPercentage;
+    switch (aspectRatio) {
+        case '1:1': paddingBottomPercentage = '100%'; break; // Height = Width
+        case '4:5': paddingBottomPercentage = '125%'; break; // Height = 5/4 * Width
+        case '9:16': paddingBottomPercentage = '177.77%'; break; // Height = 16/9 * Width
+        case '16:9': paddingBottomPercentage = '56.25%'; break; // Height = 9/16 * Width
+        default: paddingBottomPercentage = '100%'; break; // Default to square
+    }
+
+    // Apply the padding-bottom hack to the wrapper
+    generatedImageWrapper.style.position = 'relative';
+    generatedImageWrapper.style.width = '100%'; // Ensure it takes full width
+    generatedImageWrapper.style.paddingBottom = paddingBottomPercentage;
+    generatedImageWrapper.style.height = '0'; // Crucial for padding-bottom hack
+
+    // Ensure the image inside is absolutely positioned to fill this new container
+    if (generatedImageElement) {
+        generatedImageElement.style.position = 'absolute';
+        generatedImageElement.style.top = '0';
+        generatedImageElement.style.left = '0';
+        generatedImageElement.style.width = '100%';
+        generatedImageElement.style.height = '100%';
+        generatedImageElement.style.objectFit = 'contain'; // This is key: image fits without stretching
+    }
+    console.log(Date.now(), `updateImageWrapperAspectRatio: Wrapper aspect ratio set to ${aspectRatio} (${paddingBottomPercentage}).`);
 }
 
 
@@ -887,7 +1149,7 @@ function setupEventListeners() {
                 console.log(Date.now(), `Event: Mobile nav link clicked: ${e.target.id}`);
                 if (e.target.id === 'mobile-home-btn') setPage('home');
                 else if (e.target.id === 'mobile-generator-btn') setPage('generator');
-                toggleMobileMenu();
+                toggleMobileMenu(); // Close mobile menu after navigation
             });
             console.log(Date.now(), `Event Listener Attached: mobile-nav-link (${link.id})`);
         }
@@ -908,6 +1170,14 @@ function setupEventListeners() {
         console.log(Date.now(), "Event Listener Attached: promptInput");
     }
 
+    if (negativePromptInput) { // New: Negative prompt input listener
+        negativePromptInput.addEventListener('input', (e) => {
+            negativePrompt = e.target.value;
+            console.log(Date.now(), "Event: Negative prompt input changed. Current negative prompt:", negativePrompt);
+        });
+        console.log(Date.now(), "Event Listener Attached: negativePromptInput");
+    }
+
     if (copyPromptBtn) {
         copyPromptBtn.addEventListener('click', () => { console.log(Date.now(), "Event: Copy Prompt button clicked."); copyToClipboard(promptInput.value); });
         console.log(Date.now(), "Event Listener Attached: copyPromptBtn");
@@ -918,8 +1188,12 @@ function setupEventListeners() {
             console.log(Date.now(), "Event: Clear Prompt button clicked.");
             promptInput.value = '';
             prompt = '';
+            if (negativePromptInput) negativePromptInput.value = ''; // Clear negative prompt input
+            negativePrompt = ''; // Clear negative prompt state
+            enhancedPrompt = ''; // Clear enhanced prompt too
+            variationIdeas = []; // Clear variation ideas too
+            updateUI(); // Re-render UI to hide enhanced/variation displays
             showToast("Prompt cleared!", "info");
-            updateUI();
         });
         console.log(Date.now(), "Event Listener Attached: clearPromptBtn");
     }
@@ -941,7 +1215,8 @@ function setupEventListeners() {
         useEnhancedPromptBtn.addEventListener('click', () => {
             console.log(Date.now(), "Event: Use Enhanced Prompt button clicked.");
             prompt = enhancedPrompt;
-            enhancedPrompt = '';
+            if (promptInput) promptInput.value = prompt; // Update the textarea
+            enhancedPrompt = ''; // Clear it after use
             updateUI();
             showToast("Enhanced prompt applied!", "success");
         });
@@ -1013,6 +1288,7 @@ function initApp() {
         closeDebugMessageBtn = getElement('close-debug-message-btn');
 
         promptInput = getElement('prompt-input');
+        negativePromptInput = getElement('negative-prompt-input'); // Get reference to negative prompt input
         copyPromptBtn = getElement('copy-prompt-btn');
         clearPromptBtn = getElement('clear-prompt-btn');
         aspectRatioSelectionDiv = getElement('aspect-ratio-selection');
@@ -1024,6 +1300,8 @@ function initApp() {
         errorDisplay = getElement('error-display');
         imageDisplayContainer = getElement('image-display-container');
         generatedImageElement = getElement('generated-image');
+        generatedImageWrapper = getElement('generated-image-wrapper'); // Get reference to the new wrapper
+
         enhancedPromptDisplay = getElement('enhanced-prompt-display');
         enhancedPromptText = getElement('enhanced-prompt-text');
         variationIdeasDisplay = getElement('variation-ideas-display');
