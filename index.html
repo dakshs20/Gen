@@ -68,6 +68,16 @@
     <!-- Custom Stylesheet Link -->
     <link rel="stylesheet" href="style.css">
 
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-NT62SVB6D7"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-NT62SVB6D7');
+    </script>
+
     <!-- script.js is now loaded as a module -->
 </head>
 <body class="min-h-screen relative bg-gradient-to-br from-gray-950 to-gray-800 flex flex-col items-center p-4 text-gray-100 overflow-x-hidden">
@@ -279,7 +289,7 @@
             <!-- Image Output Display Container -->
             <div id="image-display-container" class="mt-8 text-center hidden">
                 <h2 class="text-xl sm:text-2xl font-mersad text-blue-300 mb-4 sm:mb-5">Your Masterpiece:</h2>
-                <div class="relative border-4 border-blue-600 rounded-xl overflow-hidden shadow-2xl group">
+                <div id="generated-image-wrapper" class="relative border-4 border-blue-600 rounded-xl overflow-hidden shadow-2xl group">
                     <img
                         id="generated-image"
                         src=""
