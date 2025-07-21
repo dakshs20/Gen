@@ -14,6 +14,7 @@ const firebaseConfig = {
     authDomain: "genart-a693a.firebaseapp.com",
     projectId: "genart-a693a",
     storageBucket: "genart-a693a.firebasestorage.app",
+    messagingSenderId: "96958671615",
     appId: "1:96958671615:web:6a0d3aa6bf42c6bda17aca",
     measurementId: "G-EDCW8VYXY6"
 };
@@ -29,9 +30,8 @@ let googleProvider;
 let currentUser = null; // Stores Firebase User object
 let freeGenerationsLeft = localStorage.getItem('freeGenerationsLeft') ? parseInt(localStorage.getItem('freeGenerationsLeft')) : 3;
 let prompt = ''; // For image generator
-let negativePrompt = ''; // For negative prompt
 let imageUrl = ''; // For generated image
-let loading = false; // For image generation (Imagen API call)
+let loading = false; // For image generation
 let currentError = ''; // Error message for display
 let currentPage = 'home'; // 'home', 'generator'
 let isSigningIn = false; // New state for sign-in loading
@@ -40,10 +40,9 @@ let isAuthReady = false; // Flag to indicate if Firebase Auth state has been che
 let aspectRatio = '1:1'; // Default aspect ratio
 
 let enhancedPrompt = '';
-let loadingEnhancePrompt = false; // For Gemini prompt enhancement
+let loadingEnhancePrompt = false;
 let variationIdeas = [];
-let loadingVariationIdeas = false; // For Gemini variation ideas
-
+let loadingVariationIdeas = false;
 
 // IMPORTANT: Your Google Cloud API Key for Imagen/Gemini (Declared at top level)
 // REPLACE "YOUR_ACTUAL_GENERATED_API_KEY_HERE_PASTE_YOUR_KEY_HERE" WITH THE KEY YOU OBTAINED FROM GOOGLE CLOUD CONSOLE
@@ -52,7 +51,6 @@ console.log(Date.now(), "script.js: IMAGEN_GEMINI_API_KEY value set at top level
 
 
 // --- UI Element References (Will be populated in initApp) ---
-// Declared as `let` so they can be assigned later in initApp
 let homePageElement;
 let generatorPageElement;
 let allPageElements = []; // Group for easy iteration
@@ -61,7 +59,6 @@ let persistentDebugMessage;
 let closeDebugMessageBtn;
 
 let promptInput;
-let negativePromptInput;
 let copyPromptBtn;
 let clearPromptBtn;
 let aspectRatioSelectionDiv;
@@ -73,8 +70,6 @@ let downloadBtn;
 let errorDisplay;
 let imageDisplayContainer;
 let generatedImageElement;
-let generatedImageWrapper;
-
 let enhancedPromptDisplay;
 let enhancedPromptText;
 let variationIdeasDisplay;
@@ -98,7 +93,7 @@ let hamburgerIcon;
 let mobileMenu;
 let mobileMenuOverlay;
 let closeMobileMenuBtn;
-let mobileNavLinks; // This will be a NodeList, not a single element
+let mobileNavLinks;
 
 let toastContainer;
 
@@ -107,7 +102,7 @@ let toastContainer;
 const getElement = (id) => {
     const element = document.getElementById(id);
     if (!element) {
-        console.error(Date.now(), `getElement: CRITICAL: Element with ID '${id}' NOT FOUND in the DOM. This element's functionality might be severely affected.`);
+        console.error(Date.now(), `getElement: Element with ID '${id}' NOT FOUND in the DOM.`);
     } else {
         console.log(Date.now(), `getElement: Element with ID '${id}' FOUND.`);
     }
@@ -123,10 +118,10 @@ function initFirebase() {
         db = getFirestore(firebaseApp);
         googleProvider = new GoogleAuthProvider();
         console.log(Date.now(), "initFirebase: Firebase services initialized successfully.");
-        // isAuthReady remains false initially. It will be set to true by onAuthStateChanged
-        // after the *initial* authentication state check is complete.
-        
-        // Firebase Auth State Listener - Crucial for determining user status and enabling/disabling UI
+        isAuthReady = true; // Set to true immediately after Firebase services are initialized
+        console.log(Date.now(), "initFirebase: isAuthReady set to true.");
+
+        // Firebase Auth State Listener - Moved here to ensure 'auth' is defined
         onAuthStateChanged(auth, async (user) => {
             console.log(Date.now(), "onAuthStateChanged: Auth state change detected. User:", user ? user.uid : "null");
             currentUser = user;
@@ -146,7 +141,6 @@ function initFirebase() {
             } else {
                 console.log(Date.now(), "onAuthStateChanged: User logged out or no user detected. Checking local storage for free generations.");
                 currentUser = null;
-                // Only reset free generations if it's not already set or is invalid
                 if (localStorage.getItem('freeGenerationsLeft') === null || parseInt(localStorage.getItem('freeGenerationsLeft')) < 0) {
                     freeGenerationsLeft = 3;
                     localStorage.setItem('freeGenerationsLeft', freeGenerationsLeft);
@@ -156,8 +150,8 @@ function initFirebase() {
                     console.log(Date.now(), "onAuthStateChanged: Loaded freeGenerationsLeft from local storage:", freeGenerationsLeft);
                 }
             }
-            isAuthReady = true; // Set to true only after the initial auth state has been processed
-            console.log(Date.now(), "onAuthStateChanged: isAuthReady set to true. Calling updateUI().");
+            isAuthReady = true; // Confirm auth state is fully processed
+            console.log(Date.now(), "onAuthStateChanged: isAuthReady confirmed true. Updating UI.");
             updateUI(); // Update UI immediately after auth state is determined
             console.log(Date.now(), "onAuthStateChanged: Auth state processing complete.");
         });
@@ -169,7 +163,7 @@ function initFirebase() {
         if (persistentDebugMessage) {
             persistentDebugMessage.classList.remove('hidden');
             const msgP = persistentDebugMessage.querySelector('p');
-            if (msgP) msgP.textContent = currentError + " Please check browser's Developer Console (F12) for details.";
+            if (msgP) msgP.textContent = currentError + " Please check console (F12) for details.";
         }
         throw e; // Re-throw to propagate to initApp's catch block
     }
@@ -225,7 +219,7 @@ function toggleMobileMenu() {
         
         console.log(Date.now(), "toggleMobileMenu: Mobile menu toggled. Current state:", !isMenuOpen ? "OPEN" : "CLOSED");
     } else {
-        console.error(Date.now(), "toggleMobileMenu: One or more mobile menu elements (mobileMenu, mobileMenuOverlay, hamburgerBtn, hamburgerIcon) not found. Cannot toggle.");
+        console.error(Date.now(), "toggleMobileMenu: One or more mobile menu elements not found. Cannot toggle.");
     }
 }
 
@@ -240,9 +234,8 @@ async function signInWithGoogle() {
     }
 
     isSigningIn = true;
-    updateSignInButtons(true); // Show loading state on buttons
+    updateSignInButtons(true);
     
-    // Basic popup blocker check
     const testWindow = window.open('', '_blank', 'width=1,height=1,left=0,top=0');
     if (testWindow) {
         testWindow.close();
@@ -251,7 +244,7 @@ async function signInWithGoogle() {
         console.warn(Date.now(), "signInWithGoogle: Popup blocker check failed. Popups might be blocked.");
         setError("Your browser might be blocking the sign-in popup. Please allow popups for this site and try again.");
         isSigningIn = false;
-        updateSignInButtons(false); // Reset loading state
+        updateSignInButtons(false);
         return;
     }
 
@@ -265,8 +258,7 @@ async function signInWithGoogle() {
         console.log(Date.now(), "signInWithGoogle: Attempting signInWithPopup call...");
         const result = await signInWithPopup(auth, googleProvider);
         console.log(Date.now(), "signInWithGoogle: signInWithPopup successful. User:", result.user.uid, result.user.displayName || result.user.email);
-        signinRequiredModal?.classList.add('hidden'); // Hide modal on successful sign-in
-        showToast("Signed in successfully!", "success");
+        signinRequiredModal?.classList.add('hidden');
     } catch (error) {
         console.error(Date.now(), "signInWithGoogle: Error during Google Sign-In:", error);
         console.error(Date.now(), "signInWithGoogle: Error code:", error.code);
@@ -285,12 +277,11 @@ async function signInWithGoogle() {
         else {
             setError(`Failed to sign in: ${error.message}`);
         }
-        showToast(`Sign-in failed: ${error.message}`, "error");
     } finally {
         console.timeEnd("signInWithPopup");
         isSigningIn = false;
-        updateSignInButtons(false); // Reset loading state on buttons
-        updateUI(); // Ensure UI reflects final auth state
+        updateSignInButtons(false);
+        updateUI();
     }
 }
 
@@ -312,7 +303,7 @@ function updateSignInButtons(loadingState) {
     signInButtons.forEach(btn => {
         if (btn) {
             btn.innerHTML = loadingState ? loadingText : buttonText;
-            btn.disabled = loadingState; // Disable during loading
+            btn.disabled = loadingState;
             btn.classList.toggle('opacity-70', loadingState);
             btn.classList.toggle('cursor-not-allowed', loadingState);
         }
@@ -338,7 +329,7 @@ async function signOutUser() {
         showToast(`Failed to sign out: ${error.message}`, "error");
     } finally {
         console.timeEnd("signOut");
-        updateUI(); // Update UI after sign out
+        updateUI();
     }
 }
 
@@ -359,7 +350,7 @@ async function fetchUserData(uid) {
             const userData = userDocSnap.data();
             freeGenerationsLeft = userData.freeGenerationsLeft !== undefined ? userData.freeGenerationsLeft : 0;
             console.log(Date.now(), "fetchUserData: Fetched existing user data:", userData);
-            // showToast(`Welcome back, ${currentUser.displayName || currentUser.email}!`, "success"); // Moved to onAuthStateChanged for initial welcome
+            showToast(`Welcome back, ${currentUser.displayName || currentUser.email}!`, "success");
         } else {
             console.log(Date.now(), "fetchUserData: User document does not exist for UID:", uid, ". Initializing new user data in Firestore with 3 free generations.");
             await setDoc(userDocRef, {
@@ -368,13 +359,13 @@ async function fetchUserData(uid) {
             });
             freeGenerationsLeft = 3;
             console.log(Date.now(), "fetchUserData: New user data initialized in Firestore for UID:", uid);
-            // showToast(`Welcome, ${currentUser.displayName || currentUser.email}! You have 3 free generations.`, "success"); // Moved to onAuthStateChanged
+            showToast(`Welcome, ${currentUser.displayName || currentUser.email}! You have 3 free generations.`, "success");
         }
-        localStorage.removeItem('freeGenerationsLeft'); // Clear local storage for authenticated users
+        localStorage.removeItem('freeGenerationsLeft');
         console.log(Date.now(), "fetchUserData: Removed freeGenerationsLeft from local storage for authenticated user.");
     } catch (error) {
         console.error(Date.now(), "fetchUserData: Error fetching/initializing user data:", error);
-        throw error; // Re-throw to be caught by onAuthStateChanged
+        throw error;
     } finally {
         console.log(Date.now(), "fetchUserData: Exiting fetchUserData.");
     }
@@ -424,104 +415,89 @@ function populateAspectRatioRadios() {
                 radioInput.addEventListener('change', (e) => {
                     aspectRatio = e.target.value;
                     console.log(Date.now(), "Event: Aspect ratio changed to:", aspectRatio);
-                    updateImageWrapperAspectRatio(); // Update wrapper aspect ratio immediately
                 });
             }
             aspectRatioSelectionDiv.appendChild(label);
         });
         console.log(Date.now(), "populateAspectRatioRadios: Aspect ratio radios populated.");
     } else {
-        console.error(Date.now(), "populateAspectRatioRadios: aspectRatioSelectionDiv element not found. Cannot populate radios.");
+        console.error(Date.now(), "populateAspectRatioRadios: aspectRatioSelectionDiv element not found.");
     }
 }
 
 // --- Page Visibility Logic (Declared at top level) ---
 async function setPage(newPage) {
     console.log(Date.now(), `setPage: Attempting to switch to page: ${newPage}. Current page: ${currentPage}`);
-    // No change needed if already on the same page
     if (currentPage === newPage) {
         console.log(Date.now(), `setPage: Already on page ${newPage}, no change needed.`);
         return;
     }
 
-    // Apply fade-out class to current page
-    const oldPageElement = allPageElements.find(el => !el.classList.contains('hidden'));
-    if (oldPageElement) {
-        oldPageElement.classList.remove('animate-fade-in-up');
-        oldPageElement.classList.add('animate-fade-out'); // Assuming you have a fade-out animation in CSS
-        // Hide after animation
-        setTimeout(() => {
-            oldPageElement.classList.add('hidden');
-            oldPageElement.classList.remove('animate-fade-out');
-        }, 500); // Match CSS transition duration
-    }
-
+    allPageElements.forEach(element => {
+        if (element) {
+            element.classList.add('hidden');
+            element.classList.remove('animate-fade-in-up');
+        }
+    });
 
     let newPageElement;
     if (newPage === 'home') {
         newPageElement = homePageElement;
     } else if (newPage === 'generator') {
         newPageElement = generatorPageElement;
-        updateImageWrapperAspectRatio(); // Ensure correct aspect ratio when navigating to generator page
     }
 
     if (newPageElement) {
-        // Show the new page and apply fade-in after a slight delay if an old page was fading out
-        setTimeout(() => {
-            newPageElement.classList.remove('hidden');
-            void newPageElement.offsetWidth; // Trigger reflow for animation
-            newPageElement.classList.add('animate-fade-in-up');
-            console.log(Date.now(), `setPage: Displayed page '${newPage}' and applied animation.`);
-        }, oldPageElement ? 200 : 0); // Small delay if an old page is fading out
+        newPageElement.classList.remove('hidden');
+        void newPageElement.offsetWidth; // Trigger reflow for animation
+        newPageElement.classList.add('animate-fade-in-up');
+        console.log(Date.now(), `setPage: Displayed page '${newPage}' and applied animation.`);
     } else {
-        console.error(Date.now(), `setPage: New page element for '${newPage}' not found. Cannot switch page.`);
+        console.error(Date.now(), `setPage: New page element for '${newPage}' not found.`);
     }
 
     currentPage = newPage;
-    updateUI(); // Call updateUI after page switch to ensure correct button states
+    updateUI();
     console.log(Date.now(), `setPage: Page switched to: ${currentPage}.`);
 }
 
 function updateUI() {
-    console.log(Date.now(), `updateUI: Updating UI for current page: ${currentPage}. Auth Ready: ${isAuthReady}. Loading: ${loading}. Enhance Loading: ${loadingEnhancePrompt}. Variation Loading: ${loadingVariationIdeas}.`);
+    console.log(Date.now(), `updateUI: Updating UI for current page: ${currentPage}. Auth Ready: ${isAuthReady}`);
 
-    // Collect all interactive elements that might need their disabled state managed
     const interactiveElements = [
         homePageElement, generatorPageElement, logoBtn,
         hamburgerBtn, closeMobileMenuBtn, mobileMenuOverlay,
-        startCreatingBtn, promptInput, negativePromptInput, copyPromptBtn, clearPromptBtn, generateBtn,
+        startCreatingBtn, promptInput, copyPromptBtn, clearPromptBtn, generateBtn,
         enhanceBtn, variationBtn, useEnhancedPromptBtn,
         downloadBtn, signInBtnDesktop, signOutBtnDesktop,
         signInBtnMobile, signOutBtnMobile, modalSignInBtn,
-        closeSigninModalBtn, closeDebugMessageBtn
+        closeSigninModalBtn
     ];
 
     interactiveElements.forEach(el => {
-        if (el) { // Only proceed if the element was successfully found
+        if (el) {
             const isAuthButton = el.id && (el.id.includes('sign-in-btn') || el.id.includes('sign-out-btn') || el.id.includes('modal-sign-in-btn'));
             const isGeneratorButton = el.id && (el.id === 'generate-image-btn' || el.id === 'enhance-prompt-btn' || el.id === 'generate-variation-ideas-btn');
             
-            // Default state: enabled if auth is ready, disabled otherwise
-            let shouldBeDisabled = !isAuthReady;
-
             if (isAuthButton) {
-                shouldBeDisabled = isSigningIn; // Auth buttons disabled only when signing in
+                el.disabled = isSigningIn;
+                el.classList.toggle('opacity-50', isSigningIn);
+                el.classList.toggle('cursor-not-allowed', isSigningIn);
             } else if (isGeneratorButton) {
-                // Generator buttons disabled if auth not ready OR (not logged in AND no free generations)
-                // OR if any generation/enhancement/variation process is loading
-                const noFreeGenerations = (!currentUser && freeGenerationsLeft <= 0);
-                shouldBeDisabled = !isAuthReady || noFreeGenerations || loading || loadingEnhancePrompt || loadingVariationIdeas;
+                // Buttons are enabled if isAuthReady is true AND (user is logged in OR has free generations)
+                const shouldDisableGenerator = !isAuthReady || (!currentUser && freeGenerationsLeft <= 0);
+                el.disabled = loading || loadingEnhancePrompt || loadingVariationIdeas || shouldDisableGenerator;
+                el.classList.toggle('opacity-50', el.disabled);
+                el.classList.toggle('cursor-not-allowed', el.disabled);
+            } else {
+                // Other general buttons are enabled if isAuthReady is true
+                el.disabled = !isAuthReady;
+                el.classList.toggle('opacity-50', !isAuthReady);
+                el.classList.toggle('cursor-not-allowed', !isAuthReady);
             }
-            // For other general buttons (like navigation, clear, copy), they are enabled if isAuthReady is true
-
-            el.disabled = shouldBeDisabled;
-            el.classList.toggle('opacity-50', shouldBeDisabled);
-            el.classList.toggle('cursor-not-allowed', shouldBeDisabled);
-            // console.log(`Button ${el.id || el.tagName} disabled: ${el.disabled}`); // Detailed logging for each button
         }
     });
 
-    // Update page specific styles and visibility
     homePageElement?.classList.toggle('bg-white/10', currentPage === 'home');
     homePageElement?.classList.toggle('text-blue-100', currentPage === 'home');
     homePageElement?.classList.toggle('text-gray-300', currentPage !== 'home');
@@ -529,20 +505,18 @@ function updateUI() {
     generatorPageElement?.classList.toggle('bg-white/10', currentPage === 'generator');
     generatorPageElement?.classList.toggle('text-blue-100', currentPage === 'generator');
     generatorPageElement?.classList.toggle('text-gray-300', currentPage !== 'generator');
-    console.log(Date.now(), "updateUI: Header button styles updated.");
+    console.log(Date.now(), "updateUI: Header button states updated.");
 
     if (currentPage === 'generator') {
-        updateGeneratorPageUI(); // Call specific UI updates for generator page
+        updateGeneratorPageUI();
     }
-    updateUIForAuthStatus(); // Update user display and sign-in/out buttons
+    updateUIForAuthStatus();
     console.log(Date.now(), "updateUI: Finished general UI update.");
 }
 
 function updateGeneratorPageUI() {
     console.log(Date.now(), "updateGeneratorPageUI: Updating dynamic generator UI.");
-    // Ensure prompt input reflects current state
     if (promptInput) promptInput.value = prompt;
-    if (negativePromptInput) negativePromptInput.value = negativePrompt;
 
     if (freeGenerationsDisplay) {
         if (currentUser) {
@@ -564,7 +538,7 @@ function updateGeneratorPageUI() {
         }
     }
 
-    populateAspectRatioRadios(); // Ensure aspect ratio radios are always up-to-date
+    populateAspectRatioRadios();
 
     if (generateBtn) {
         let buttonText = 'Generate Image';
@@ -584,22 +558,23 @@ function updateGeneratorPageUI() {
             </span>
         ` : buttonText;
 
-        // Apply visual styles based on loading/disabled state
         generateBtn.classList.toggle('bg-gray-700', loading);
         generateBtn.classList.toggle('cursor-not-allowed', loading);
         generateBtn.classList.toggle('bg-gradient-to-r', !loading);
-        // Remove all color gradients first to prevent conflicts
+
         generateBtn.classList.remove('from-blue-700', 'to-indigo-800', 'hover:from-blue-800', 'hover:to-indigo-900',
                                    'from-red-600', 'to-red-700', 'hover:from-red-700', 'hover:to-red-800',
                                    'from-gray-600', 'to-gray-700', 'hover:from-gray-700', 'hover:to-gray-800');
 
 
         if (loading) {
-            // Handled by generic bg-gray-700 and loading text
+            // Handled above
         } else if (!currentUser && freeGenerationsLeft <= 0) {
             generateBtn.classList.add('from-red-600', 'to-red-700', 'hover:from-red-700', 'hover:to-red-800');
+            generateBtn.disabled = false;
         } else {
             generateBtn.classList.add('from-blue-700', 'to-indigo-800', 'hover:from-blue-800', 'hover:to-indigo-900');
+            generateBtn.disabled = false;
         }
         console.log(Date.now(), "updateGeneratorPageUI: Generate button state updated.");
     }
@@ -618,7 +593,8 @@ function updateGeneratorPageUI() {
             imageDisplayContainer.classList.remove('hidden');
             generatedImageElement.src = imageUrl;
             generatedImageElement.alt = `AI generated image based on prompt: ${prompt}`;
-            generatedImageElement.classList.add('animate-image-reveal'); // Re-apply animation on new image
+            generatedImageElement.style = getImageDisplayStyles();
+            generatedImageElement.classList.add('animate-image-reveal');
             console.log(Date.now(), "updateGeneratorPageUI: Image container shown with new image.");
             // NEW DEBUG LOGS FOR IMAGE DISPLAY
             console.log(Date.now(), "DEBUG: generatedImageElement.outerHTML:", generatedImageElement.outerHTML);
@@ -652,10 +628,6 @@ function updateGeneratorPageUI() {
     if (enhancedPromptDisplay && enhancedPromptText) {
         enhancedPromptText.textContent = enhancedPrompt;
         enhancedPromptDisplay.classList.toggle('hidden', !enhancedPrompt);
-        // Show/hide use-enhanced-prompt-btn based on enhancedPrompt presence
-        if (useEnhancedPromptBtn) {
-            useEnhancedPromptBtn.classList.toggle('hidden', !enhancedPrompt);
-        }
         console.log(Date.now(), "updateGeneratorPageUI: Enhanced prompt display updated. Hidden:", !enhancedPrompt);
     }
 
@@ -686,200 +658,6 @@ function updateGeneratorPageUI() {
     }
 }
 
-/**
- * Dynamically sets the padding-bottom on the image wrapper to maintain aspect ratio.
- * This creates a container that holds the image without stretching it.
- */
-function updateImageWrapperAspectRatio() {
-    if (!generatedImageWrapper) {
-        console.warn(Date.now(), "updateImageWrapperAspectRatio: generatedImageWrapper not found. Cannot update aspect ratio.");
-        return;
-    }
-
-    let paddingBottomPercentage;
-    switch (aspectRatio) {
-        case '1:1': paddingBottomPercentage = '100%'; break; // Height = Width
-        case '4:5': paddingBottomPercentage = '125%'; break; // Height = 5/4 * Width
-        case '9:16': paddingBottomPercentage = '177.77%'; break; // Height = 16/9 * Width
-        case '16:9': paddingBottomPercentage = '56.25%'; break; // Height = 9/16 * Width
-        default: paddingBottomPercentage = '100%'; break; // Default to square
-    }
-
-    // Apply the padding-bottom hack to the wrapper
-    generatedImageWrapper.style.position = 'relative';
-    generatedImageWrapper.style.width = '100%'; // Ensure it takes full width
-    generatedImageWrapper.style.paddingBottom = paddingBottomPercentage;
-    generatedImageWrapper.style.height = '0'; // Crucial for padding-bottom hack
-
-    // Ensure the image inside is absolutely positioned to fill this new container
-    if (generatedImageElement) {
-        generatedImageElement.style.position = 'absolute';
-        generatedImageElement.style.top = '0';
-        generatedImageElement.style.left = '0';
-        generatedImageElement.style.width = '100%';
-        generatedImageElement.style.height = '100%';
-        generatedImageElement.style.objectFit = 'contain'; // This is key: image fits without stretching
-    }
-    console.log(Date.now(), `updateImageWrapperAspectRatio: Wrapper aspect ratio set to ${aspectRatio} (${paddingBottomPercentage}).`);
-}
-
-/**
- * Calls the Gemini API to enhance the current prompt for more detailed and versatile image generation.
- */
-async function enhancePrompt() {
-    console.log(Date.now(), "enhancePrompt: Function called.");
-    clearError();
-
-    if (!IMAGEN_GEMINI_API_KEY || IMAGEN_GEMINI_API_KEY === "YOUR_ACTUAL_GENERATED_API_KEY_HERE_PASTE_YOUR_KEY_HERE") {
-        setError('API Key is not configured for prompt enhancement. Please replace "YOUR_ACTUAL_GENERATED_API_KEY_HERE_PASTE_YOUR_KEY_HERE" in script.js with your actual key obtained from Google Cloud Console.');
-        updateUI();
-        console.error(Date.now(), "enhancePrompt: API Key not configured.");
-        showToast("API Key missing for prompt enhancement. Check console.", "error");
-        return;
-    }
-
-    if (!promptInput || !promptInput.value.trim()) { // Use promptInput.value directly
-        setError('Please enter a prompt to enhance.');
-        updateUI();
-        showToast("Enter a prompt to enhance.", "info");
-        return;
-    }
-
-    loadingEnhancePrompt = true;
-    enhancedPrompt = ''; // Clear previous enhanced prompt
-    updateUI(); // Update UI to show loading state
-    showToast("Enhancing your prompt...", "info");
-    console.time("enhancePromptAPI");
-
-    try {
-        const promptToEnhance = promptInput.value.trim(); // Get current value from input
-        const geminiPrompt = `
-            You are an expert prompt engineer for AI image generation.
-            Take the following user prompt and expand it into a highly detailed, descriptive, and creative prompt for an image generation model.
-            Focus on adding details that enhance the visual quality, atmosphere, and specific characteristics of the subject, without forcing a "photorealistic" style unless explicitly requested.
-            Consider adding:
-            - Specific descriptive adjectives for the subject and scene.
-            - Details about lighting (e.g., "soft morning light", "dramatic chiaroscuro", "neon glow").
-            - Environmental details (e.g., "lush foliage", "ancient cobblestones", "futuristic cityscape").
-            - Artistic style suggestions if appropriate (e.g., "oil painting", "concept art", "pixel art", "surrealist", "anime style").
-            - Compositional elements (e.g., "wide shot", "close-up", "dynamic angle").
-            - Textures, colors, and mood.
-            - Quality keywords like "ultra-detailed", "high resolution", "intricate".
-
-            Do not include any conversational text, just the enhanced prompt.
-            Original prompt: "${promptToEnhance}"
-        `;
-
-        const payload = { contents: [{ role: "user", parts: [{ text: geminiPrompt }] }] };
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${IMAGEN_GEMINI_API_KEY}`;
-
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`Gemini API error: ${response.status} - ${errorData.error.message || 'Unknown error'}`);
-        }
-
-        const result = await response.json();
-        if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
-            enhancedPrompt = result.candidates[0].content.parts[0].text.trim();
-            showToast("Prompt enhanced successfully!", "success");
-            console.log(Date.now(), "enhancePrompt: Enhanced prompt received:", enhancedPrompt);
-        } else {
-            setError('Failed to enhance prompt. No response from AI.');
-            showToast('Failed to enhance prompt.', "error");
-            console.error(Date.now(), 'enhancePrompt: AI response missing content:', result);
-        }
-    } catch (e) {
-        setError(`Error enhancing prompt: ${e.message || 'Unknown error'}.`);
-        showToast(`Prompt enhancement failed: ${e.message}`, "error");
-        console.error(Date.now(), 'enhancePrompt: Error during prompt enhancement:', e);
-    } finally {
-        loadingEnhancePrompt = false;
-        updateUI(); // Update UI to reflect end of loading and show enhanced prompt
-        console.timeEnd("enhancePromptAPI");
-    }
-}
-
-/**
- * Calls the Gemini API to generate creative variation ideas for the current prompt.
- */
-async function generateVariationIdeas() {
-    console.log(Date.now(), "generateVariationIdeas: Function called.");
-    clearError();
-
-    if (!IMAGEN_GEMINI_API_KEY || IMAGEN_GEMINI_API_KEY === "YOUR_ACTUAL_GENERATED_API_KEY_HERE_PASTE_YOUR_KEY_HERE") {
-        setError('API Key is not configured for variation ideas. Please replace "YOUR_ACTUAL_GENERATED_API_KEY_HERE_PASTE_YOUR_KEY_HERE" in script.js with your actual key obtained from Google Cloud Console.');
-        updateUI();
-        console.error(Date.now(), "generateVariationIdeas: API Key not configured.");
-        showToast("API Key missing for variation ideas. Check console.", "error");
-        return;
-    }
-
-    if (!promptInput || !promptInput.value.trim()) { // Use promptInput.value directly
-        setError('Please enter a prompt to get variation ideas.');
-        updateUI();
-        showToast("Enter a prompt to get ideas.", "info");
-        return;
-    }
-
-    loadingVariationIdeas = true;
-    variationIdeas = []; // Clear previous ideas
-    updateUI(); // Update UI to show loading state
-    showToast("Generating variation ideas...", "info");
-    console.time("generateVariationIdeasAPI");
-
-    try {
-        const promptForIdeas = promptInput.value.trim(); // Get current value from input
-        const geminiPrompt = `
-            Generate 3-5 distinct creative variations for the following image generation prompt.
-            Each variation should be a concise, single sentence, focusing on different styles, moods, or minor subject alterations.
-            Present them as a numbered list. Do not include any conversational text, just the numbered list.
-            Original prompt: "${promptForIdeas}"
-        `;
-
-        const payload = { contents: [{ role: "user", parts: [{ text: geminiPrompt }] }] };
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${IMAGEN_GEMINI_API_KEY}`;
-
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`Gemini API error: ${response.status} - ${errorData.error.message || 'Unknown error'}`);
-        }
-
-        const result = await response.json();
-        if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
-            const rawIdeas = result.candidates[0].content.parts[0].text.trim();
-            // Parse the numbered list into an array
-            variationIdeas = rawIdeas.split('\n').map(line => line.replace(/^\d+\.\s*/, '').trim()).filter(line => line.length > 0);
-            showToast("Variation ideas generated!", "success");
-            console.log(Date.now(), "generateVariationIdeas: Ideas received:", variationIdeas);
-        } else {
-            setError('Failed to generate variation ideas. No response from AI.');
-            showToast('Failed to generate ideas.', "error");
-            console.error(Date.now(), 'generateVariationIdeas: AI response missing content:', result);
-        }
-    } catch (e) {
-        setError(`Error generating variation ideas: ${e.message || 'Unknown error'}.`);
-        showToast(`Idea generation failed: ${e.message}`, "error");
-        console.error(Date.now(), 'generateVariationIdeas: Error during idea generation:', e);
-    } finally {
-        loadingVariationIdeas = false;
-        updateUI(); // Update UI to reflect end of loading and show ideas
-        console.timeEnd("generateVariationIdeasAPI");
-    }
-}
-
-
 async function generateImage() {
     console.log(Date.now(), "generateImage: Function called.");
     clearError();
@@ -892,7 +670,7 @@ async function generateImage() {
         return;
     }
 
-    if (!promptInput || !promptInput.value.trim()) { // Use promptInput.value directly
+    if (!prompt.trim()) {
         setError('Please enter a prompt to generate an image.');
         updateUI();
         console.warn(Date.now(), "generateImage: Prompt is empty.");
@@ -903,8 +681,8 @@ async function generateImage() {
     if (!currentUser) {
         if (freeGenerationsLeft <= 0) {
             console.log(Date.now(), "generateImage: Free generations exhausted for unauthenticated user. Showing sign-in modal.");
-            signinRequiredModal?.classList.remove('hidden'); // Show the modal
-            updateUI(); // Update UI to reflect modal visibility
+            signinRequiredModal?.classList.remove('hidden');
+            updateUI();
             showToast("You've used your free generations. Please sign in!", "info");
             return;
         } else {
@@ -919,49 +697,30 @@ async function generateImage() {
     }
 
     loading = true;
-    imageUrl = ''; // Clear previous image
-    updateUI(); // Update UI to show loading state
+    imageUrl = '';
+    updateUI();
     console.log(Date.now(), "generateImage: Starting image generation request.");
     console.time("imageGenerationAPI");
 
     try {
-        let finalPrompt = promptInput.value.trim(); // Get current value from input
-        
+        let finalPrompt = prompt;
         const textKeywords = ['text', 'number', 'letter', 'font', 'word', 'digits', 'characters'];
-        const containsTextKeyword = textKeywords.some(keyword => finalPrompt.toLowerCase().includes(keyword));
+        const containsTextKeyword = textKeywords.some(keyword => prompt.toLowerCase().includes(keyword));
 
         if (containsTextKeyword) {
             finalPrompt += ", clear, legible, sharp, high-resolution text, sans-serif font, precisely rendered, not distorted, no gibberish, accurate spelling, crisp edges";
             console.log(Date.now(), "generateImage: Added text-specific enhancements to prompt.");
         }
 
-        // --- ENHANCED ASPECT RATIO PROMPT ENGINEERING ---
         let aspectRatioInstruction = '';
         switch (aspectRatio) {
-            case '1:1': 
-                aspectRatioInstruction = ', square format, 1:1 aspect ratio, balanced composition, perfect square, symmetrical frame'; 
-                break;
-            case '4:5': 
-                aspectRatioInstruction = ', portrait orientation, 4:5 aspect ratio, tall and narrow composition, vertical format, ideal for social media portrait posts'; 
-                break;
-            case '9:16': 
-                aspectRatioInstruction = ', ultra-portrait orientation, 9:16 aspect ratio, extremely tall and narrow composition, vertical smartphone screen format, full-screen mobile display'; 
-                break;
-            case '16:9': 
-                aspectRatioInstruction = ', landscape orientation, 16:9 aspect ratio, wide and cinematic composition, horizontal widescreen format, film aspect ratio'; 
-                break;
+            case '1:1': aspectRatioInstruction = ', square aspect ratio'; break;
+            case '4:5': aspectRatioInstruction = ', portrait 4:5 aspect ratio'; break;
+            case '9:16': aspectRatioInstruction = ', vertical 9:16 aspect ratio'; break;
+            case '16:9': aspectRatioInstruction = ', horizontal 16:9 aspect ratio'; break;
         }
         finalPrompt += aspectRatioInstruction;
-        // --- END ENHANCED ASPECT RATIO PROMPT ENGINEERING ---
-
-        // --- ADD NEGATIVE PROMPT ---
-        if (negativePromptInput && negativePromptInput.value.trim()) {
-            finalPrompt += ` --no ${negativePromptInput.value.trim()}`;
-            console.log(Date.now(), "generateImage: Added negative prompt.");
-        }
-        // --- END ADD NEGATIVE PROMPT ---
-
-        console.log(Date.now(), "generateImage: Final prompt for Imagen API:", finalPrompt);
+        console.log(Date.now(), "generateImage: Final prompt for API:", finalPrompt);
 
 
         const payload = { instances: { prompt: finalPrompt }, parameters: { "sampleCount": 1 } };
@@ -976,7 +735,7 @@ async function generateImage() {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(`Imagen API error: ${response.status} - ${errorData.error.message || 'Unknown error'}`);
+            throw new Error(`API error: ${response.status} - ${errorData.error.message || 'Unknown error'}`);
         }
 
         const result = await response.json();
@@ -998,7 +757,7 @@ async function generateImage() {
     } finally {
         console.timeEnd("imageGenerationAPI");
         loading = false;
-        updateUI(); // Update UI to reflect end of loading and show image
+        updateUI();
         console.log(Date.now(), "generateImage: Image generation process finished (loading state reset).");
     }
 }
@@ -1042,7 +801,6 @@ function copyToClipboard(text) {
         }
     } catch (err) {
         console.error(Date.now(), 'copyToClipboard: Failed to copy text using execCommand:', err);
-        // Fallback to Clipboard API if execCommand fails (e.g., in modern browsers with stricter security)
         try {
             navigator.clipboard.writeText(text).then(() => {
                 showToast("Prompt copied to clipboard!", "success");
@@ -1069,41 +827,14 @@ function clearError() {
     currentError = '';
 }
 
-/**
- * Dynamically sets the padding-bottom on the image wrapper to maintain aspect ratio.
- * This creates a container that holds the image without stretching it.
- */
-function updateImageWrapperAspectRatio() {
-    if (!generatedImageWrapper) {
-        console.warn(Date.now(), "updateImageWrapperAspectRatio: generatedImageWrapper not found. Cannot update aspect ratio.");
-        return;
-    }
-
-    let paddingBottomPercentage;
+function getImageDisplayStyles() {
     switch (aspectRatio) {
-        case '1:1': paddingBottomPercentage = '100%'; break; // Height = Width
-        case '4:5': paddingBottomPercentage = '125%'; break; // Height = 5/4 * Width
-        case '9:16': paddingBottomPercentage = '177.77%'; break; // Height = 16/9 * Width
-        case '16:9': paddingBottomPercentage = '56.25%'; break; // Height = 9/16 * Width
-        default: paddingBottomPercentage = '100%'; break; // Default to square
+        case '1:1': return 'width: 100%; height: auto; aspect-ratio: 1 / 1;';
+        case '4:5': return 'width: 100%; height: auto; aspect-ratio: 4 / 5;';
+        case '9:16': return 'width: 100%; height: auto; aspect-ratio: 9 / 16;';
+        case '16:9': return 'width: 100%; height: auto; aspect-ratio: 16 / 9;';
+        default: return 'width: 100%; height: auto;';
     }
-
-    // Apply the padding-bottom hack to the wrapper
-    generatedImageWrapper.style.position = 'relative';
-    generatedImageWrapper.style.width = '100%'; // Ensure it takes full width
-    generatedImageWrapper.style.paddingBottom = paddingBottomPercentage;
-    generatedImageWrapper.style.height = '0'; // Crucial for padding-bottom hack
-
-    // Ensure the image inside is absolutely positioned to fill this new container
-    if (generatedImageElement) {
-        generatedImageElement.style.position = 'absolute';
-        generatedImageElement.style.top = '0';
-        generatedImageElement.style.left = '0';
-        generatedImageElement.style.width = '100%';
-        generatedImageElement.style.height = '100%';
-        generatedImageElement.style.objectFit = 'contain'; // This is key: image fits without stretching
-    }
-    console.log(Date.now(), `updateImageWrapperAspectRatio: Wrapper aspect ratio set to ${aspectRatio} (${paddingBottomPercentage}).`);
 }
 
 
@@ -1112,8 +843,6 @@ function setupEventListeners() {
     console.log(Date.now(), "setupEventListeners: Setting up all event listeners...");
 
     // Header Navigation Buttons
-    // Using `const` here is fine because these are local to this function and assigned once.
-    // The global `let` variables will be assigned the actual DOM elements.
     const homeBtn = getElement('home-btn');
     if (homeBtn) {
         homeBtn.addEventListener('click', () => { console.log(Date.now(), "Event: Desktop Home button clicked."); setPage('home'); });
@@ -1126,24 +855,23 @@ function setupEventListeners() {
         console.log(Date.now(), "Event Listener Attached: generator-btn");
     }
 
-    // Logo button
-    if (logoBtn) { // logoBtn is a global let variable, assigned in initApp
+    if (logoBtn) {
         logoBtn.addEventListener('click', () => { console.log(Date.now(), "Event: Logo button clicked."); setPage('home'); });
         console.log(Date.now(), "Event Listener Attached: logoBtn");
     }
 
     // Mobile Menu Buttons
-    if (hamburgerBtn) { // hamburgerBtn is a global let variable
+    if (hamburgerBtn) {
         hamburgerBtn.addEventListener('click', () => { console.log(Date.now(), "Event: Hamburger button clicked."); toggleMobileMenu(); });
         console.log(Date.now(), "Event Listener Attached: hamburgerBtn");
     }
 
-    if (closeMobileMenuBtn) { // closeMobileMenuBtn is a global let variable
+    if (closeMobileMenuBtn) {
         closeMobileMenuBtn.addEventListener('click', () => { console.log(Date.now(), "Event: Close Mobile Menu button clicked."); toggleMobileMenu(); });
         console.log(Date.now(), "Event Listener Attached: closeMobileMenuBtn");
     }
 
-    if (mobileMenuOverlay) { // mobileMenuOverlay is a global let variable
+    if (mobileMenuOverlay) {
         mobileMenuOverlay.addEventListener('click', () => {
             console.log(Date.now(), "Event: Mobile menu overlay clicked.");
             if (mobileMenu?.classList.contains('translate-x-0')) {
@@ -1153,120 +881,101 @@ function setupEventListeners() {
         console.log(Date.now(), "Event Listener Attached: mobileMenuOverlay");
     }
 
-    // mobileNavLinks is a NodeList, iterate over it
-    if (mobileNavLinks) {
-        mobileNavLinks.forEach(link => {
-            if (link) {
-                link.addEventListener('click', (e) => {
-                    console.log(Date.now(), `Event: Mobile nav link clicked: ${e.target.id}`);
-                    if (e.target.id === 'mobile-home-btn') setPage('home');
-                    else if (e.target.id === 'mobile-generator-btn') setPage('generator');
-                    toggleMobileMenu(); // Close mobile menu after navigation
-                });
-                console.log(Date.now(), `Event Listener Attached: mobile-nav-link (${link.id})`);
-            }
-        });
-    } else {
-        console.warn(Date.now(), "setupEventListeners: mobileNavLinks (NodeList) not found or empty.");
-    }
-
+    mobileNavLinks.forEach(link => {
+        if (link) {
+            link.addEventListener('click', (e) => {
+                console.log(Date.now(), `Event: Mobile nav link clicked: ${e.target.id}`);
+                if (e.target.id === 'mobile-home-btn') setPage('home');
+                else if (e.target.id === 'mobile-generator-btn') setPage('generator');
+                toggleMobileMenu();
+            });
+            console.log(Date.now(), `Event Listener Attached: mobile-nav-link (${link.id})`);
+        }
+    });
 
     // Home Page Button
-    if (startCreatingBtn) { // startCreatingBtn is a global let variable
+    if (startCreatingBtn) {
         startCreatingBtn.addEventListener('click', () => { console.log(Date.now(), "Event: Start Creating Now button clicked."); setPage('generator'); });
         console.log(Date.now(), "Event Listener Attached: startCreatingBtn");
     }
 
     // Generator Page Controls
-    if (promptInput) { // promptInput is a global let variable
+    if (promptInput) {
         promptInput.addEventListener('input', (e) => {
-            prompt = e.target.value; // Update state variable on input
+            prompt = e.target.value;
             console.log(Date.now(), "Event: Prompt input changed. Current prompt:", prompt);
         });
         console.log(Date.now(), "Event Listener Attached: promptInput");
     }
 
-    if (negativePromptInput) { // negativePromptInput is a global let variable
-        negativePromptInput.addEventListener('input', (e) => {
-            negativePrompt = e.target.value; // Update state variable on input
-            console.log(Date.now(), "Event: Negative prompt input changed. Current negative prompt:", negativePrompt);
-        });
-        console.log(Date.now(), "Event Listener Attached: negativePromptInput");
-    }
-
-    if (copyPromptBtn) { // copyPromptBtn is a global let variable
-        copyPromptBtn.addEventListener('click', () => { console.log(Date.now(), "Event: Copy Prompt button clicked."); copyToClipboard(promptInput ? promptInput.value : ''); });
+    if (copyPromptBtn) {
+        copyPromptBtn.addEventListener('click', () => { console.log(Date.now(), "Event: Copy Prompt button clicked."); copyToClipboard(promptInput.value); });
         console.log(Date.now(), "Event Listener Attached: copyPromptBtn");
     }
 
-    if (clearPromptBtn) { // clearPromptBtn is a global let variable
+    if (clearPromptBtn) {
         clearPromptBtn.addEventListener('click', () => {
             console.log(Date.now(), "Event: Clear Prompt button clicked.");
-            if (promptInput) promptInput.value = '';
+            promptInput.value = '';
             prompt = '';
-            if (negativePromptInput) negativePromptInput.value = '';
-            negativePrompt = '';
-            enhancedPrompt = ''; // Clear enhanced prompt too
-            variationIdeas = []; // Clear variation ideas too
-            updateUI(); // Re-render UI to hide enhanced/variation displays
             showToast("Prompt cleared!", "info");
+            updateUI();
         });
         console.log(Date.now(), "Event Listener Attached: clearPromptBtn");
     }
 
-    if (generateBtn) { // generateBtn is a global let variable
+    if (generateBtn) {
         generateBtn.addEventListener('click', () => { console.log(Date.now(), "Event: Generate Image button clicked."); generateImage(); });
         console.log(Date.now(), "Event Listener Attached: generateBtn");
     }
-    if (enhanceBtn) { // enhanceBtn is a global let variable
+    if (enhanceBtn) {
         enhanceBtn.addEventListener('click', () => { console.log(Date.now(), "Event: Enhance Prompt button clicked."); enhancePrompt(); });
         console.log(Date.now(), "Event Listener Attached: enhanceBtn");
     }
-    if (variationBtn) { // variationBtn is a global let variable
+    if (variationBtn) {
         variationBtn.addEventListener('click', () => { console.log(Date.now(), "Event: Get Variation Ideas button clicked."); generateVariationIdeas(); });
         console.log(Date.now(), "Event Listener Attached: variationBtn");
     }
 
-    if (useEnhancedPromptBtn) { // useEnhancedPromptBtn is a global let variable
+    if (useEnhancedPromptBtn) {
         useEnhancedPromptBtn.addEventListener('click', () => {
             console.log(Date.now(), "Event: Use Enhanced Prompt button clicked.");
             prompt = enhancedPrompt;
-            if (promptInput) promptInput.value = prompt; // Update the textarea
-            enhancedPrompt = ''; // Clear it after use
+            enhancedPrompt = '';
             updateUI();
             showToast("Enhanced prompt applied!", "success");
         });
         console.log(Date.now(), "Event Listener Attached: useEnhancedPromptBtn");
     }
 
-    if (downloadBtn) { // downloadBtn is a global let variable
+    if (downloadBtn) {
         downloadBtn.addEventListener('click', () => { console.log(Date.now(), "Event: Download Image button clicked."); downloadImage(); });
         console.log(Date.now(), "Event Listener Attached: downloadBtn");
     }
 
     // Auth Buttons
-    if (signInBtnDesktop) { // signInBtnDesktop is a global let variable
+    if (signInBtnDesktop) {
         signInBtnDesktop.addEventListener('click', () => { console.log(Date.now(), "Event: Desktop Sign In button clicked."); signInWithGoogle(); });
         console.log(Date.now(), "Event Listener Attached: signInBtnDesktop");
     }
-    if (signOutBtnDesktop) { // signOutBtnDesktop is a global let variable
+    if (signOutBtnDesktop) {
         signOutBtnDesktop.addEventListener('click', () => { console.log(Date.now(), "Event: Desktop Sign Out button clicked."); signOutUser(); });
         console.log(Date.now(), "Event Listener Attached: signOutBtnDesktop");
     }
-    if (signInBtnMobile) { // signInBtnMobile is a global let variable
+    if (signInBtnMobile) {
         signInBtnMobile.addEventListener('click', () => { console.log(Date.now(), "Event: Mobile Sign In button clicked."); signInWithGoogle(); });
         console.log(Date.now(), "Event Listener Attached: signInBtnMobile");
     }
-    if (signOutBtnMobile) { // signOutBtnMobile is a global let variable
+    if (signOutBtnMobile) {
         signOutBtnMobile.addEventListener('click', () => { console.log(Date.now(), "Event: Mobile Sign Out button clicked."); signOutUser(); });
         console.log(Date.now(), "Event Listener Attached: signOutBtnMobile");
     }
-    if (modalSignInBtn) { // modalSignInBtn is a global let variable
+    if (modalSignInBtn) {
         modalSignInBtn.addEventListener('click', () => { console.log(Date.now(), "Event: Modal Sign In button clicked."); signInWithGoogle(); });
         console.log(Date.now(), "Event Listener Attached: modalSignInBtn");
     }
 
-    if (closeSigninModalBtn) { // closeSigninModalBtn is a global let variable
+    if (closeSigninModalBtn) {
         closeSigninModalBtn.addEventListener('click', () => {
             console.log(Date.now(), "Event: Close Sign-in Modal button clicked.");
             signinRequiredModal?.classList.add('hidden');
@@ -1274,7 +983,7 @@ function setupEventListeners() {
         console.log(Date.now(), "Event Listener Attached: closeSigninModalBtn");
     }
 
-    if (closeDebugMessageBtn) { // closeDebugMessageBtn is a global let variable
+    if (closeDebugMessageBtn) {
         closeDebugMessageBtn.addEventListener('click', () => {
             console.log(Date.now(), "Event: Close Debug Message button clicked.");
             persistentDebugMessage?.classList.add('hidden');
@@ -1282,7 +991,7 @@ function setupEventListeners() {
         console.log(Date.now(), "Event Listener Attached: closeDebugMessageBtn");
     }
 
-    populateAspectRatioRadios(); // Populate radios after the div is found
+    populateAspectRatioRadios();
     console.log(Date.now(), "setupEventListeners: All event listeners setup attempted.");
 }
 
@@ -1293,10 +1002,9 @@ function initApp() {
 
     try {
         // Initialize Firebase services first
-        initFirebase(); // This sets up auth listener which eventually calls updateUI
+        initFirebase();
 
         // Populate UI Element References here, after DOM is ready
-        // It's crucial that these are correctly assigned before event listeners are set up
         homePageElement = getElement('home-page-element');
         generatorPageElement = getElement('generator-page-element');
         allPageElements = [homePageElement, generatorPageElement].filter(Boolean); // Filter out nulls
@@ -1305,7 +1013,6 @@ function initApp() {
         closeDebugMessageBtn = getElement('close-debug-message-btn');
 
         promptInput = getElement('prompt-input');
-        negativePromptInput = getElement('negative-prompt-input');
         copyPromptBtn = getElement('copy-prompt-btn');
         clearPromptBtn = getElement('clear-prompt-btn');
         aspectRatioSelectionDiv = getElement('aspect-ratio-selection');
@@ -1317,8 +1024,6 @@ function initApp() {
         errorDisplay = getElement('error-display');
         imageDisplayContainer = getElement('image-display-container');
         generatedImageElement = getElement('generated-image');
-        generatedImageWrapper = getElement('generated-image-wrapper');
-
         enhancedPromptDisplay = getElement('enhanced-prompt-display');
         enhancedPromptText = getElement('enhanced-prompt-text');
         variationIdeasDisplay = getElement('variation-ideas-display');
@@ -1342,19 +1047,17 @@ function initApp() {
         mobileMenu = getElement('mobile-menu');
         mobileMenuOverlay = getElement('mobile-menu-overlay');
         closeMobileMenuBtn = getElement('close-mobile-menu-btn');
-        // mobileNavLinks is a NodeList and needs to be queried after the DOM is ready
-        mobileNavLinks = document.querySelectorAll('#mobile-menu .mobile-nav-link'); 
+        mobileNavLinks = document.querySelectorAll('#mobile-menu .mobile-nav-link'); // NodeList, not single element
 
         toastContainer = getElement('toast-container');
 
         console.log(Date.now(), "initApp: All UI element references obtained.");
 
         console.log(Date.now(), "initApp: Calling setupEventListeners().");
-        setupEventListeners(); // Attach event listeners to the now-referenced elements
-        
+        setupEventListeners();
         console.log(Date.now(), "initApp: Calling setPage('home').");
-        setPage('home'); // Set initial page (this also calls updateUI)
-        // updateUI() is also called by onAuthStateChanged after initial check, so it will refresh again.
+        setPage('home'); // Set initial page
+        updateUI(); // Initial UI update after all elements are ready and listeners are set up
 
         console.timeEnd("AppInitialization");
         console.log(Date.now(), "initApp: App initialization complete.");
@@ -1374,8 +1077,7 @@ function initApp() {
 }
 
 // --- DOMContentLoaded Listener (Main entry point after DOM is ready) ---
-// Ensure initApp runs only when the DOM is fully loaded and parsed.
 document.addEventListener('DOMContentLoaded', () => {
-    console.log(Date.now(), "script.js: DOMContentLoaded event listener triggered. Initiating app.");
+    console.log(Date.now(), "script.js: DOMContentLoaded event listener triggered.");
     initApp(); // Call the main initialization function
 });
