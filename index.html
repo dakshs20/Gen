@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="uploaded:Untitled-1-02.png-e054fc08-376b-45b9-a2c0-a609c5de84a7">
     <!-- SEO: Optimized Title Tag - Removed "Free" as requested -->
     <title>AI Image Generator | GenArt - Create Stunning Art Online</title>
     <!-- SEO: Optimized Meta Description for better keyword integration and CTR -->
@@ -67,6 +69,16 @@
 
     <!-- Custom Stylesheet Link -->
     <link rel="stylesheet" href="style.css">
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-NT62SVB6D7"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-NT62SVB6D7');
+    </script>
 
     <!-- script.js is now loaded as a module -->
 </head>
@@ -249,7 +261,7 @@
                     rows="4"
                     placeholder="e.g., A vibrant cyberpunk city street at night, neon lights, rainy, highly detailed, 8k, cinematic"
                 ></textarea>
-                <!-- Separate space for Copy and Clear buttons - FIXED UI OVERLAY -->
+                <!-- Separate space for Copy and Clear buttons -->
                 <div class="flex justify-end space-x-2 mt-2">
                     <button id="copy-prompt-btn" class="px-4 py-2 text-gray-400 hover:text-blue-300 transition-colors duration-200 rounded-full bg-gray-700/50 hover:bg-gray-600/70 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-semibold" title="Copy Prompt">
                         <i class="fas fa-copy mr-1"></i> Copy
@@ -279,12 +291,12 @@
             <!-- Image Output Display Container -->
             <div id="image-display-container" class="mt-8 text-center hidden">
                 <h2 class="text-xl sm:text-2xl font-mersad text-blue-300 mb-4 sm:mb-5">Your Masterpiece:</h2>
-                <div class="relative border-4 border-blue-600 rounded-xl overflow-hidden shadow-2xl group">
+                <div id="generated-image-wrapper" class="relative border-4 border-blue-600 rounded-xl overflow-hidden shadow-2xl group">
                     <img
                         id="generated-image"
                         src=""
                         alt="AI generated image based on your prompt" <!-- SEO: This alt text will be dynamically updated by script.js for better SEO -->
-                        class="w-full h-auto object-cover rounded-lg transform transition-transform duration-500 group-hover:scale-105"
+                        class="w-full h-auto object-cover rounded-lg transform transition-transform duration-500 group-hover:scale-105 opacity-0"
                         onerror="this.onerror=null;this.src='https://placehold.co/600x400/333333/FFFFFF?text=Image+Load+Error';"
                     />
                     <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity duration-300 flex items-center justify-center">
