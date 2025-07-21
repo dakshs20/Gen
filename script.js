@@ -106,7 +106,7 @@ let toastContainer;
 const getElement = (id) => {
     const element = document.getElementById(id);
     if (!element) {
-        console.error(Date.now(), `getElement: Element with ID '${id}' NOT FOUND in the DOM.`);
+        console.error(Date.now(), `getElement: Element with ID '${id}' NOT FOUND in the DOM. This element's functionality might be affected.`);
     } else {
         console.log(Date.now(), `getElement: Element with ID '${id}' FOUND.`);
     }
@@ -122,9 +122,8 @@ function initFirebase() {
         db = getFirestore(firebaseApp);
         googleProvider = new GoogleAuthProvider();
         console.log(Date.now(), "initFirebase: Firebase services initialized successfully.");
-        isAuthReady = true; // Set to true immediately after Firebase services are initialized
-        console.log(Date.now(), "initFirebase: isAuthReady set to true.");
-
+        // isAuthReady is initially false, will be set to true by onAuthStateChanged after initial check
+        
         // Firebase Auth State Listener - Moved here to ensure 'auth' is defined
         onAuthStateChanged(auth, async (user) => {
             console.log(Date.now(), "onAuthStateChanged: Auth state change detected. User:", user ? user.uid : "null");
@@ -154,7 +153,7 @@ function initFirebase() {
                     console.log(Date.now(), "onAuthStateChanged: Loaded freeGenerationsLeft from local storage:", freeGenerationsLeft);
                 }
             }
-            isAuthReady = true; // Confirm auth state is fully processed
+            isAuthReady = true; // Confirm auth state is fully processed AFTER initial check
             console.log(Date.now(), "onAuthStateChanged: isAuthReady confirmed true. Updating UI.");
             updateUI(); // Update UI immediately after auth state is determined
             console.log(Date.now(), "onAuthStateChanged: Auth state processing complete.");
@@ -433,6 +432,7 @@ function populateAspectRatioRadios() {
 // --- Page Visibility Logic (Declared at top level) ---
 async function setPage(newPage) {
     console.log(Date.now(), `setPage: Attempting to switch to page: ${newPage}. Current page: ${currentPage}`);
+    // No change needed if already on the same page
     if (currentPage === newPage) {
         console.log(Date.now(), `setPage: Already on page ${newPage}, no change needed.`);
         return;
@@ -479,6 +479,7 @@ async function setPage(newPage) {
 function updateUI() {
     console.log(Date.now(), `updateUI: Updating UI for current page: ${currentPage}. Auth Ready: ${isAuthReady}`);
 
+    // Collect all interactive elements that might need their disabled state managed
     const interactiveElements = [
         homePageElement, generatorPageElement, logoBtn,
         hamburgerBtn, closeMobileMenuBtn, mobileMenuOverlay,
@@ -490,7 +491,7 @@ function updateUI() {
     ];
 
     interactiveElements.forEach(el => {
-        if (el) {
+        if (el) { // Only proceed if the element was successfully found
             const isAuthButton = el.id && (el.id.includes('sign-in-btn') || el.id.includes('sign-out-btn') || el.id.includes('modal-sign-in-btn'));
             const isGeneratorButton = el.id && (el.id === 'generate-image-btn' || el.id === 'enhance-prompt-btn' || el.id === 'generate-variation-ideas-btn');
             
@@ -499,13 +500,13 @@ function updateUI() {
                 el.classList.toggle('opacity-50', isSigningIn);
                 el.classList.toggle('cursor-not-allowed', isSigningIn);
             } else if (isGeneratorButton) {
-                // Buttons are enabled if isAuthReady is true AND (user is logged in OR has free generations)
+                // Generator-related buttons are disabled if auth is not ready OR (not logged in AND no free generations)
                 const shouldDisableGenerator = !isAuthReady || (!currentUser && freeGenerationsLeft <= 0);
                 el.disabled = loading || loadingEnhancePrompt || loadingVariationIdeas || shouldDisableGenerator;
                 el.classList.toggle('opacity-50', el.disabled);
                 el.classList.toggle('cursor-not-allowed', el.disabled);
             } else {
-                // Other general buttons are enabled if isAuthReady is true
+                // Other general buttons are enabled if Firebase Auth state has been processed (isAuthReady)
                 el.disabled = !isAuthReady;
                 el.classList.toggle('opacity-50', !isAuthReady);
                 el.classList.toggle('cursor-not-allowed', !isAuthReady);
@@ -513,6 +514,7 @@ function updateUI() {
         }
     });
 
+    // Update page specific styles and visibility
     homePageElement?.classList.toggle('bg-white/10', currentPage === 'home');
     homePageElement?.classList.toggle('text-blue-100', currentPage === 'home');
     homePageElement?.classList.toggle('text-gray-300', currentPage !== 'home');
