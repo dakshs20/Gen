@@ -3,8 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="uploaded:https://jmp.sh/s/d9SvOBExPWABT8PrTdzb">
     <!-- SEO: Optimized Title Tag - Removed "Free" as requested -->
     <title>AI Image Generator | GenArt - Create Stunning Art Online</title>
     <!-- SEO: Optimized Meta Description for better keyword integration and CTR -->
@@ -69,16 +67,6 @@
 
     <!-- Custom Stylesheet Link -->
     <link rel="stylesheet" href="style.css">
-
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-NT62SVB6D7"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      gtag('config', 'G-NT62SVB6D7');
-    </script>
 
     <!-- script.js is now loaded as a module -->
 </head>
@@ -151,7 +139,7 @@
         <div class="flex flex-col h-full p-6">
             <div class="flex justify-end mb-8">
                 <button id="close-mobile-menu-btn" class="text-gray-300 hover:text-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md p-2">
-                    <i class="fas fa-times-circle text-2xl"></i>
+                    <i class="fas fa-times text-2xl"></i>
                 </button>
             </div>
             <ul class="flex flex-col space-y-6 text-xl font-semibold text-gray-200">
@@ -291,7 +279,7 @@
             <!-- Image Output Display Container -->
             <div id="image-display-container" class="mt-8 text-center hidden">
                 <h2 class="text-xl sm:text-2xl font-mersad text-blue-300 mb-4 sm:mb-5">Your Masterpiece:</h2>
-                <div id="generated-image-wrapper" class="relative border-4 border-blue-600 rounded-xl overflow-hidden shadow-2xl group">
+                <div class="relative border-4 border-blue-600 rounded-xl overflow-hidden shadow-2xl group">
                     <img
                         id="generated-image"
                         src=""
