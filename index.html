@@ -41,13 +41,19 @@
             <div class="w-full max-w-3xl">
                 <div id="generator-ui" class="w-full fade-in-slide-up" style="animation-delay: 100ms;">
                     <h1 class="text-3xl sm:text-4xl md:text-5xl font-medium text-gray-900 mb-4">What do you want to create?</h1>
-                    <p class="text-base md:text-lg text-gray-500 mb-10">Start generating with a simple conversation.</p>
+                    <p class="text-base md:text-lg text-gray-500 mb-10">Start generating with a simple conversation or edit an image.</p>
                     <div id="prompt-container" class="relative bg-white rounded-2xl border border-gray-200/80 shadow-sm transition-all duration-300 ease-in-out">
                         <div class="p-3">
+                            <!-- Image Preview Container -->
+                            <div id="image-preview-container" class="hidden relative w-20 h-20 mb-2">
+                                <img id="image-preview" class="w-full h-full object-cover rounded-md" src="" alt="Image preview">
+                                <button id="remove-image-btn" class="absolute -top-2 -right-2 bg-gray-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-black">&times;</button>
+                            </div>
                             <textarea id="prompt-input" rows="4" class="w-full p-3 bg-transparent text-gray-800 placeholder-gray-400 focus:outline-none resize-none text-base" placeholder="An oil painting of a futuristic city skyline at dusk..."></textarea>
                         </div>
                         <div class="absolute bottom-4 left-5 flex items-center">
-                             <button class="p-2 rounded-full hover:bg-gray-100 transition-colors" aria-label="Add file"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400 hover:text-gray-600 transition-colors"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
+                             <input type="file" id="image-upload-input" accept="image/png, image/jpeg" class="hidden">
+                             <button id="image-upload-btn" class="p-2 rounded-full hover:bg-gray-100 transition-colors" aria-label="Add file"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400 hover:text-gray-600 transition-colors"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
                         </div>
                         <button id="generate-btn" class="absolute right-4 bottom-4 w-10 h-10 bg-gray-800 text-white rounded-lg flex items-center justify-center hover:bg-black transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-gray-400" aria-label="Generate Image"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></button>
                     </div>
@@ -68,7 +74,7 @@
                 </div>
             </div>
 
-            <!-- New Technology Section -->
+            <!-- Technology Section -->
             <div class="mt-24 text-center max-w-2xl mx-auto fade-in-slide-up" style="animation-delay: 300ms;">
                 <h2 class="text-3xl font-medium text-gray-800 mb-4">Technology for creating anything.</h2>
                 <p class="text-lg text-gray-600">
@@ -77,8 +83,8 @@
             </div>
         </main>
 
-        <!-- New Cinematic Section -->
-        <section id="cinematic-section" class="relative w-full max-w-full left-1/2 -translate-x-1/2 py-24 md:py-32 my-16 rounded-2xl overflow-hidden">
+        <!-- Cinematic Section -->
+        <section id="cinematic-section" class="relative w-full py-24 md:py-32 my-16 rounded-2xl overflow-hidden">
             <div id="stars-container">
                 <div id="stars"></div>
                 <div id="stars2"></div>
@@ -95,13 +101,55 @@
             </div>
         </section>
 
+        <!-- Gen-0 Announcement Section -->
+        <section id="gen0-section" class="relative w-full py-24 md:py-32 my-16 rounded-2xl overflow-hidden">
+            <div class="relative z-10 text-center px-4">
+                <h3 class="text-lg md:text-xl text-blue-400 font-semibold mb-4 cinematic-text">COMING SOON</h3>
+                <h2 class="text-4xl md:text-6xl font-bold text-white mb-6 cinematic-text" style="animation-delay: 0.2s;">Introducing Gen-0</h2>
+                <p class="text-lg md:text-xl text-gray-300 max-w-2xl mx-auto cinematic-text" style="animation-delay: 0.4s;">
+                    A revolutionary leap in generative AI. Experience unparalleled quality and generate stunning visuals in under <span class="font-bold text-white">5 seconds</span>.
+                </p>
+            </div>
+        </section>
+
+        <!-- Gallery Section -->
+        <section id="gallery-section" class="w-full py-16 overflow-hidden">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-medium text-gray-800 fade-in-slide-up">Creations from GenArt</h2>
+            </div>
+            <div class="marquee">
+                <div class="marquee-content">
+                    <!-- START: YOUR NEW IMAGE LINKS -->
+                    <img src="https://freeimage.host/i/FiiqmhB"><img src="https://iili.io/FiiqmhB.md.png" alt="Generated by GenArt" class="gallery-image">
+                    <img src="https://freeimage.host/i/FiiC8VS"><img src="https://iili.io/FiiC8VS.md.png" alt="Generated by GenArt" class="gallery-image">
+                    <img src="https://freeimage.host/i/FiizC0P"><img src="https://iili.io/FiizC0P.md.png" alt="Generated by GenArt" class="gallery-image">
+                    <img src="https://freeimage.host/i/FiiT4UP"><img src="https://iili.io/FiiT4UP.md.png" alt="Generated by GenArt" class="gallery-image">
+                    <img src="https://freeimage.host/i/FiiA23B"><img src="https://iili.io/FiiA23B.md.png" alt="Generated by GenArt" class="gallery-image">
+                    <img src="https://freeimage.host/i/Fii52mF"><img src="https://iili.io/Fii52mF.md.png" alt="Generated by GenArt" class="gallery-image">
+                    <img src="https://freeimage.host/i/Fii7T3Q"><img src="https://iili.io/Fii7T3Q.md.png" alt="Generated by GenArt" class="gallery-image">
+                    <!-- END: ADD YOUR IMAGE LINKS HERE -->
+                </div>
+        
+                <div class="marquee-content" aria-hidden="true">
+                    <!-- This is a duplicate of the above block for a seamless loop. Also replace these. -->
+                    <img src="https://freeimage.host/i/FiiqmhB"><img src="https://iili.io/FiiqmhB.md.png" alt="Generated by GenArt" class="gallery-image">
+                    <img src="https://freeimage.host/i/FiiC8VS"><img src="https://iili.io/FiiC8VS.md.png" alt="Generated by GenArt" class="gallery-image">
+                    <img src="https://freeimage.host/i/FiizC0P"><img src="https://iili.io/FiizC0P.md.png" alt="Generated by GenArt" class="gallery-image">
+                    <img src="https://freeimage.host/i/FiiT4UP"><img src="https://iili.io/FiiT4UP.md.png" alt="Generated by GenArt" class="gallery-image">
+                    <img src="https://freeimage.host/i/FiiA23B"><img src="https://iili.io/FiiA23B.md.png" alt="Generated by GenArt" class="gallery-image">
+                    <img src="https://freeimage.host/i/Fii52mF"><img src="https://iili.io/Fii52mF.md.png" alt="Generated by GenArt" class="gallery-image">
+                    <img src="https://freeimage.host/i/Fii7T3Q"><img src="https://iili.io/Fii7T3Q.md.png" alt="Generated by GenArt" class="gallery-image">
+                </div>
+            </div>
+        </section>
+
 
         <footer class="text-center py-8 mt-auto border-t border-gray-200 fade-in-slide-up" style="animation-delay: 200ms;">
             <div class="flex justify-center items-center space-x-6 mb-4">
                 <a href="https://www.instagram.com/genartlabs/" target="_blank" rel="noopener noreferrer" class="text-gray-500 hover:text-gray-800 transition-colors"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 012.153 2.153c.247.636.416 1.363.465 2.427.048 1.024.06 1.378.06 3.808s-.012 2.784-.06 3.808c-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-2.153 2.153c-.636.247-1.363.416-2.427.465-1.024.048-1.378.06-3.808.06s-2.784-.013-3.808-.06c-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-2.153-2.153c-.247-.636-.416-1.363-.465-2.427-.048-1.024-.06-1.378-.06-3.808s.012-2.784.06-3.808c.049-1.064.218-1.791.465-2.427a4.902 4.902 0 012.153-2.153c.636-.247 1.363.416 2.427.465C9.53 2.013 9.884 2 12.315 2zm0 1.62c-2.403 0-2.741.01-3.701.058-1.009.046-1.594.208-2.039.384a3.278 3.278 0 00-1.48 1.48c-.176.445-.338 1.03-.384 2.039-.049.96-.058 1.299-.058 3.701s.01 2.741.058 3.701c.046 1.009.208 1.594.384 2.039a3.278 3.278 0 001.48 1.48c.445.176 1.03.338 2.039.384.96.049 1.299.058 3.701.058s2.741-.01 3.701-.058c1.009-.046 1.594-.208 2.039-.384a3.278 3.278 0 001.48-1.48c.176-.445.338-1.03.384-2.039.049-.96.058-1.299.058-3.701s-.01-2.741-.058-3.701c-.046-1.009-.208-1.594-.384-2.039a3.278 3.278 0 00-1.48-1.48c-.445-.176-1.03-.338-2.039-.384C15.056 3.63 14.717 3.62 12.315 3.62zM12 7.18c-2.649 0-4.795 2.146-4.795 4.795s2.146 4.795 4.795 4.795 4.795-2.146 4.795-4.795S14.649 7.18 12 7.18zm0 7.96c-1.742 0-3.165-1.423-3.165-3.165S10.258 8.81 12 8.81s3.165 1.423 3.165 3.165S13.742 15.14 12 15.14zM18.81 5.99a1.38 1.38 0 100 2.76 1.38 1.38 0 000-2.76z" clip-rule="evenodd" /></svg><span class="sr-only">Instagram</span></a>
                 <a href="https://x.com/GenArtai_" target="_blank" rel="noopener noreferrer" class="text-gray-500 hover:text-gray-800 transition-colors"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg><span class="sr-only">X</span></a>
             </div>
-            <p class="text-xs text-gray-500">&copy; 2025 GenArt. All rights reserved.</p>
+            <p class="text-xs text-gray-500">&copy; 2024 GenArt. All rights reserved.</p>
         </footer>
     </div>
 
@@ -119,7 +167,4 @@
     <script type="module" src="script.js"></script>
 </body>
 </html>
-
-
-
 
