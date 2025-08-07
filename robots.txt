@@ -1,8 +1,4 @@
-# robots.txt for GenArt AI Image Generator
-
-# Allow all crawlers to access all pages
 User-agent: *
 Allow: /
 
-# Specify the path to your sitemap
-Sitemap: https://www.gensart.space/sitemap.xml
+Sitemap: https://genart.space/sitemap.xml
