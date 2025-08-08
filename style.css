@@ -66,23 +66,6 @@ textarea::-webkit-scrollbar-thumb:hover {
     visibility: visible; 
 }
 
-/* --- Mobile Menu Fix --- */
-#mobile-menu {
-    background-color: #4F7ABB; /* User's requested blue background */
-    z-index: 50; /* Ensures menu is on top of other content */
-}
-#mobile-menu #mobile-generation-counter {
-    color: #e0e8f9; /* Lighter text for contrast */
-}
-#mobile-menu #mobile-auth-btn {
-    color: white;
-    font-weight: 600;
-}
-#mobile-menu #mobile-auth-btn:hover {
-    background-color: #436aac; /* A slightly darker blue for hover */
-}
-
-
 /* --- Cinematic Section Styles --- */
 #cinematic-section {
     background-color: #0c0a18;
@@ -248,11 +231,118 @@ textarea::-webkit-scrollbar-thumb:hover {
     50% { transform: scale(1.3); opacity: 0.35; }
 }
 
-/* UPDATED DYNAMIC ANIMATION */
 @keyframes gradient-animation {
     0% { background-position: 0% 0%; }
     50% { background-position: 100% 100%; }
     100% { background-position: 0% 0%; }
+}
+
+/* --- REBUILT Sticky Music Player --- */
+#music-player {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 1000;
+}
+
+#music-btn {
+    width: 64px;
+    height: 64px;
+    background: #ffffff;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    outline: none;
+    position: relative;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+#music-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 12px 35px rgba(0,0,0,0.2);
+}
+
+.icon-container {
+    width: 28px;
+    height: 28px;
+    position: relative;
+    color: #333;
+}
+
+.icon-play, .icon-pause {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), opacity 0.4s ease;
+}
+
+.icon-pause {
+    opacity: 0;
+    transform: scale(0.7) rotate(-45deg);
+}
+
+#music-btn.playing .icon-play {
+    transform: scale(0.7) rotate(45deg);
+    opacity: 0;
+}
+
+#music-btn.playing .icon-pause {
+    transform: scale(1);
+    opacity: 1;
+}
+
+.waves-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.wave {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 2px solid #42669C;
+    opacity: 0;
+    animation: wave-animation 2s ease-out infinite;
+    transform-origin: center;
+}
+
+.wave:nth-child(2) {
+    animation-delay: 0.5s;
+}
+.wave:nth-child(3) {
+    animation-delay: 1s;
+}
+
+@keyframes wave-animation {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1.8);
+        opacity: 0;
+    }
+}
+
+/* Hide waves by default */
+.wave {
+    display: none;
+}
+/* Show waves only when playing */
+#music-btn.playing .wave {
+    display: block;
 }
 
 
@@ -265,5 +355,15 @@ textarea::-webkit-scrollbar-thumb:hover {
 
     .marquee-content {
         animation-duration: 45s;
+    }
+
+    #music-player {
+        bottom: 1.5rem;
+        right: 1.5rem;
+    }
+
+    #music-btn {
+        width: 56px;
+        height: 56px;
     }
 }
