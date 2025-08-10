@@ -123,28 +123,20 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const animateCursor = () => {
-        // Move dot instantly
         cursorDot.style.left = `${mouseX}px`;
         cursorDot.style.top = `${mouseY}px`;
-
-        // Animate outline with a delay (easing)
         const ease = 0.15;
         outlineX += (mouseX - outlineX) * ease;
         outlineY += (mouseY - outlineY) * ease;
         cursorOutline.style.transform = `translate(calc(${outlineX}px - 50%), calc(${outlineY}px - 50%))`;
-        
         requestAnimationFrame(animateCursor);
     };
     requestAnimationFrame(animateCursor);
 
-    const interactiveElements = document.querySelectorAll('a, button, textarea, input[type="file"]');
+    const interactiveElements = document.querySelectorAll('a, button, textarea, input, label');
     interactiveElements.forEach(el => {
-        el.addEventListener('mouseover', () => {
-            cursorOutline.classList.add('cursor-hover');
-        });
-        el.addEventListener('mouseout', () => {
-            cursorOutline.classList.remove('cursor-hover');
-        });
+        el.addEventListener('mouseover', () => cursorOutline.classList.add('cursor-hover'));
+        el.addEventListener('mouseout', () => cursorOutline.classList.remove('cursor-hover'));
     });
 });
 
@@ -266,44 +258,38 @@ async function generateImageWithRetry(prompt, imageData, maxRetries = 3) {
             const apiKey = "AIzaSyBZxXWl9s2AeSCzMrfoEfnYWpGyfvP7jqs";
 
             if (imageData) {
-                // API LOGIC FOR IMAGE EDITING
                 apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=${apiKey}`;
                 payload = {
                     "contents": [{
                         "parts": [
                             { "text": prompt },
-                            {
-                                "inlineData": {
-                                    "mimeType": imageData.mimeType,
-                                    "data": imageData.data
-                                }
-                            }
+                            { "inlineData": { "mimeType": imageData.mimeType, "data": imageData.data } }
                         ]
                     }],
-                    "generationConfig": {
-                        "responseModalities": ["IMAGE", "TEXT"]
-                    }
+                    "generationConfig": { "responseModalities": ["IMAGE", "TEXT"] }
                 };
-                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`API Error: ${response.statusText} - ${errorText}`);
-                }
-                const result = await response.json();
-                const base64Data = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
-                if (!base64Data) throw new Error("No image data received from API.");
-                return `data:image/png;base64,${base64Data}`;
-
             } else {
-                // Text-to-Image generation (using Imagen for best quality)
                 apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
                 payload = { instances: [{ prompt }], parameters: { "sampleCount": 1 } };
-                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
-                const result = await response.json();
-                if (result.predictions?.[0]?.bytesBase64Encoded) return `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
-                else throw new Error("No image data received from API.");
             }
+
+            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`API Error: ${response.status} - ${errorText}`);
+            }
+
+            const result = await response.json();
+            let base64Data;
+            if (imageData) {
+                base64Data = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+            } else {
+                base64Data = result.predictions?.[0]?.bytesBase64Encoded;
+            }
+
+            if (!base64Data) throw new Error("No image data received from API.");
+            return `data:image/png;base64,${base64Data}`;
+
         } catch (error) {
             if (attempt >= maxRetries - 1) throw error;
             await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
