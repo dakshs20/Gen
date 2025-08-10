@@ -61,6 +61,7 @@ const cursorOutline = document.querySelector('.cursor-outline');
 let timerInterval;
 const FREE_GENERATION_LIMIT = 3;
 let uploadedImageData = null; // To store the base64 image data
+let lastGeneratedImageUrl = null; // To store the URL of the blurred image
 
 // --- Main App Logic ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -160,6 +161,19 @@ function updateUIForAuthState(user) {
         generationCounterEl.textContent = welcomeText;
         mobileGenerationCounterEl.textContent = welcomeText;
         authModal.setAttribute('aria-hidden', 'true');
+
+        // Unblur image if one was just generated
+        if (lastGeneratedImageUrl) {
+            const blurredContainer = document.querySelector('.blurred-image-container');
+            if (blurredContainer) {
+                const img = blurredContainer.querySelector('img');
+                img.classList.remove('blurred-image');
+                const overlay = blurredContainer.querySelector('.unlock-overlay');
+                if (overlay) overlay.remove();
+            }
+            lastGeneratedImageUrl = null;
+        }
+
     } else {
         authBtn.textContent = 'Sign In';
         mobileAuthBtn.textContent = 'Sign In';
@@ -221,10 +235,13 @@ async function generateImage() {
         return;
     }
 
-    if (!auth.currentUser && getGenerationCount() >= FREE_GENERATION_LIMIT) {
+    const count = getGenerationCount();
+    if (!auth.currentUser && count > FREE_GENERATION_LIMIT) {
         authModal.setAttribute('aria-hidden', 'false');
         return;
     }
+
+    const shouldBlur = !auth.currentUser && count === FREE_GENERATION_LIMIT;
 
     // UI Reset
     imageGrid.innerHTML = '';
@@ -237,7 +254,10 @@ async function generateImage() {
 
     try {
         const imageUrl = await generateImageWithRetry(prompt, uploadedImageData);
-        displayImage(imageUrl, prompt);
+        if (shouldBlur) {
+            lastGeneratedImageUrl = imageUrl;
+        }
+        displayImage(imageUrl, prompt, shouldBlur);
         if (!auth.currentUser) {
             incrementGenerationCount();
         }
@@ -298,13 +318,22 @@ async function generateImageWithRetry(prompt, imageData, maxRetries = 3) {
 }
 
 // --- Helper Functions ---
-function displayImage(imageUrl, prompt) {
+function displayImage(imageUrl, prompt, shouldBlur = false) {
     const imgContainer = document.createElement('div');
     imgContainer.className = 'bg-white rounded-xl shadow-lg overflow-hidden relative group fade-in-slide-up mx-auto max-w-2xl border border-gray-200/80';
+    
+    if (shouldBlur) {
+        imgContainer.classList.add('blurred-image-container');
+    }
+
     const img = document.createElement('img');
     img.src = imageUrl;
     img.alt = prompt;
     img.className = 'w-full h-auto object-contain';
+    if (shouldBlur) {
+        img.classList.add('blurred-image');
+    }
+
     const downloadButton = document.createElement('button');
     downloadButton.className = 'absolute top-4 right-4 bg-black/50 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-white';
     downloadButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
@@ -317,8 +346,26 @@ function displayImage(imageUrl, prompt) {
         a.click();
         document.body.removeChild(a);
     };
+
     imgContainer.appendChild(img);
-    imgContainer.appendChild(downloadButton);
+    if (!shouldBlur) {
+        imgContainer.appendChild(downloadButton);
+    }
+
+    if (shouldBlur) {
+        const overlay = document.createElement('div');
+        overlay.className = 'unlock-overlay';
+        overlay.innerHTML = `
+            <h3 class="text-xl font-semibold">Unlock Image</h3>
+            <p class="mt-2">Sign in to unlock this image and get unlimited generations.</p>
+            <button id="unlock-btn">Sign In to Unlock</button>
+        `;
+        overlay.querySelector('#unlock-btn').onclick = () => {
+            authModal.setAttribute('aria-hidden', 'false');
+        };
+        imgContainer.appendChild(overlay);
+    }
+
     imageGrid.appendChild(imgContainer);
 }
 
