@@ -55,6 +55,17 @@
     </script>
 </head>
 <body>
+    <!-- Maintenance Overlay -->
+    <div id="maintenance-overlay" data-status="maintenance" class="fixed inset-0 bg-gray-900 bg-opacity-95 backdrop-blur-sm flex flex-col items-center justify-center z-[9999] transition-transform duration-1000 ease-in-out">
+        <div class="text-center text-white">
+            <h1 class="text-4xl font-semibold mb-3">Under Maintenance</h1>
+            <p class="text-lg text-gray-300 mb-6">Our website is currently undergoing scheduled maintenance. We should be back shortly.</p>
+            <div class="w-48 h-1 bg-white mx-auto overflow-hidden">
+                <div class="h-full bg-blue-500 animate-line-load"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Custom Cursor -->
     <div class="cursor-dot"></div>
     <div class="cursor-outline"></div>
@@ -228,4 +239,3 @@
     <script type="module" src="script.js"></script>
 </body>
 </html>
-
