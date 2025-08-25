@@ -58,25 +58,15 @@ const FREE_GENERATION_LIMIT = 3;
 let uploadedImageData = null;
 let lastGeneratedImageUrl = null;
 let selectedAspectRatio = '1:1';
-// NEW: State for managing CAPTCHA verification
-let isCaptchaVerified = false;
-let recaptchaToken = null;
 const originalGenerateBtnContent = generateBtn.innerHTML;
 
 
 // --- reCAPTCHA Callback Function ---
-// This function is now called ONLY when Google decides verification is needed.
+// This function is called by Google with a fresh, single-use token.
 window.onRecaptchaSuccess = function(token) {
-    console.log("Invisible reCAPTCHA check passed successfully.");
-    isCaptchaVerified = true;
-    recaptchaToken = token; // Store the token for future requests
-    
-    // Re-enable the button and restore its original icon
-    generateBtn.disabled = false;
-    generateBtn.innerHTML = originalGenerateBtnContent;
-
-    // Automatically proceed with the image generation the user intended to start.
-    generateImage();
+    console.log("Invisible reCAPTCHA check passed. Proceeding with image generation.");
+    // Immediately use the fresh token to generate the image.
+    generateImage(token);
 };
 
 // --- Main App Logic ---
@@ -155,8 +145,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// NEW: Central handler for the generate button
+// MODIFIED: This function now only validates input and triggers the reCAPTCHA.
 function handleGenerateClick() {
+    // Prevent multiple clicks while reCAPTCHA is running.
+    if (generateBtn.disabled) return;
+
     const prompt = promptInput.value.trim();
     if (!prompt) {
         showMessage('Please describe what you want to create or edit.', 'error');
@@ -170,26 +163,20 @@ function handleGenerateClick() {
         return;
     }
 
-    // If user is already verified, generate immediately.
-    // Otherwise, execute reCAPTCHA which will then trigger generation.
-    if (isCaptchaVerified) {
-        generateImage();
-    } else {
-        // Disable button to prevent multiple clicks while verifying
-        generateBtn.disabled = true;
-        generateBtn.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
-        grecaptcha.execute();
-    }
+    // Disable the button and show a loading spinner.
+    generateBtn.disabled = true;
+    generateBtn.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+    
+    // Execute reCAPTCHA. The onRecaptchaSuccess callback will handle the rest.
+    grecaptcha.execute();
 }
 
 
-async function generateImage() {
+async function generateImage(recaptchaToken) {
     const prompt = promptInput.value.trim();
     const shouldBlur = !auth.currentUser && getGenerationCount() === (FREE_GENERATION_LIMIT - 1);
 
-    // Disable button and show loading state
-    generateBtn.disabled = true;
-    generateBtn.innerHTML = originalGenerateBtnContent; // Restore icon
+    // The button is already disabled, now we transition the UI.
     musicPlayer.style.display = 'none';
     imageGrid.innerHTML = '';
     messageBox.innerHTML = '';
@@ -199,7 +186,7 @@ async function generateImage() {
     startTimer();
 
     try {
-        // Use the globally stored reCAPTCHA token for the API call
+        // Use the fresh reCAPTCHA token for the API call.
         const imageUrl = await generateImageWithRetry(prompt, uploadedImageData, recaptchaToken, selectedAspectRatio);
         if (shouldBlur) { lastGeneratedImageUrl = imageUrl; }
         displayImage(imageUrl, prompt, shouldBlur);
@@ -207,19 +194,18 @@ async function generateImage() {
         if (!auth.currentUser) { incrementGenerationCount(); }
     } catch (error) {
         console.error('Image generation failed:', error);
-        showMessage(`Sorry, we couldn't generate the image. ${error.message}`, 'error');
-        // If the API fails due to an invalid token, we should re-verify next time.
-        if (error.message.includes('recaptcha')) {
-            isCaptchaVerified = false;
-            recaptchaToken = null;
-        }
+        // Provide a more user-friendly error message.
+        const errorMessage = error.message.includes('recaptcha') 
+            ? "You are not human! reCAPTCHA verification failed."
+            : `Sorry, we couldn't generate the image.`;
+        showMessage(errorMessage, 'error');
     } finally {
         stopTimer();
         loadingIndicator.classList.add('hidden');
         addBackButton();
-        // IMPORTANT: Re-enable the generate button so the user can go again.
+        // IMPORTANT: Always re-enable the generate button and restore its icon.
         generateBtn.disabled = false;
-        // We no longer reset grecaptcha here. Let it manage its own state.
+        generateBtn.innerHTML = originalGenerateBtnContent;
     }
 }
 
