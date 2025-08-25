@@ -9,9 +9,7 @@ body {
     cursor: none;
 }
 
-.grecaptcha-badge { 
-    visibility: hidden !important;
-}
+/* REMOVED .grecaptcha-badge rule */
 
 /* --- Aspect Ratio Button Styles --- */
 .aspect-ratio-btn {
