@@ -34,7 +34,7 @@
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
     }
     </script>
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <!-- REMOVED Google reCAPTCHA script -->
 </head>
 <body>
     <!-- Custom Cursor -->
@@ -87,7 +87,6 @@
                         <button id="generate-btn" class="absolute right-4 bottom-4 w-10 h-10 bg-gray-800 text-white rounded-lg flex items-center justify-center hover:bg-black transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-gray-400" aria-label="Generate AI Image"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></button>
                     </div>
 
-                    <!-- NEW: Aspect Ratio Selector -->
                     <div id="aspect-ratio-selector" class="mt-4 flex justify-center items-center gap-3">
                         <button class="aspect-ratio-btn selected" data-ratio="1:1">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
@@ -103,7 +102,7 @@
                         </button>
                     </div>
 
-                    <div class="g-recaptcha" data-sitekey="6Lfwb7ErAAAAAEo_MUSTFYNb6ekKlhBDcGDfvWes" data-callback="onRecaptchaSuccess" data-size="invisible"></div>
+                    <!-- REMOVED Google reCAPTCHA div -->
 
                     <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-left text-sm">
                         <button class="example-prompt text-gray-500 hover:text-gray-900 transition-colors text-left">Make an ad photo for my sneaker brand</button>
@@ -193,11 +192,7 @@
                 <a href="https://x.com/GenArtai_" target="_blank" rel="noopener noreferrer" class="text-gray-500 hover:text-gray-800 transition-colors"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg><span class="sr-only">X</span></a>
             </div>
             <p class="text-xs text-gray-500">&copy; 2025 GenArt. All rights reserved.</p>
-            <p class="text-xs text-gray-400 mt-2">
-                This site is protected by reCAPTCHA and the Google
-                <a href="https://policies.google.com/privacy" class="underline hover:text-gray-600">Privacy Policy</a> and
-                <a href="https://policies.google.com/terms" class="underline hover:text-gray-600">Terms of Service</a> apply.
-            </p>
+            <!-- REMOVED Privacy Policy text -->
         </footer>
     </div>
 
