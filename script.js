@@ -21,7 +21,6 @@ const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
 // --- DOM Element References ---
-const appContainer = document.getElementById('app-container');
 const promptInput = document.getElementById('prompt-input');
 const generateBtn = document.getElementById('generate-btn');
 const resultContainer = document.getElementById('result-container');
@@ -51,18 +50,33 @@ const lofiMusic = document.getElementById('lofi-music');
 const cursorDot = document.querySelector('.cursor-dot');
 const cursorOutline = document.querySelector('.cursor-outline');
 const aspectRatioBtns = document.querySelectorAll('.aspect-ratio-btn');
-const musicPlayer = document.getElementById('music-player'); // <-- ADDED: Reference to the music player
+const musicPlayer = document.getElementById('music-player');
 
+// --- State Variables ---
 let timerInterval;
 const FREE_GENERATION_LIMIT = 3;
 let uploadedImageData = null;
 let lastGeneratedImageUrl = null;
-let selectedAspectRatio = '1:1'; // Default aspect ratio
+let selectedAspectRatio = '1:1';
+// NEW: State for managing CAPTCHA verification
+let isCaptchaVerified = false;
+let recaptchaToken = null;
+const originalGenerateBtnContent = generateBtn.innerHTML;
+
 
 // --- reCAPTCHA Callback Function ---
+// This function is now called ONLY when Google decides verification is needed.
 window.onRecaptchaSuccess = function(token) {
-    console.log("Invisible reCAPTCHA check passed. Proceeding with image generation.");
-    generateImage(token);
+    console.log("Invisible reCAPTCHA check passed successfully.");
+    isCaptchaVerified = true;
+    recaptchaToken = token; // Store the token for future requests
+    
+    // Re-enable the button and restore its original icon
+    generateBtn.disabled = false;
+    generateBtn.innerHTML = originalGenerateBtnContent;
+
+    // Automatically proceed with the image generation the user intended to start.
+    generateImage();
 };
 
 // --- Main App Logic ---
@@ -70,6 +84,17 @@ document.addEventListener('DOMContentLoaded', () => {
     onAuthStateChanged(auth, user => {
         updateUIForAuthState(user);
     });
+
+    // --- Event Listeners ---
+    generateBtn.addEventListener('click', handleGenerateClick);
+    promptInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleGenerateClick();
+        }
+    });
+    
+    // (Other event listeners remain the same)
     mobileMenuBtn.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
     document.addEventListener('click', (event) => {
         if (!mobileMenu.contains(event.target) && !mobileMenuBtn.contains(event.target)) {
@@ -79,10 +104,9 @@ document.addEventListener('DOMContentLoaded', () => {
     authBtn.addEventListener('click', handleAuthAction);
     mobileAuthBtn.addEventListener('click', handleAuthAction);
     googleSignInBtn.addEventListener('click', signInWithGoogle);
-    // MODIFIED: Show music player when modal is closed
     closeModalBtn.addEventListener('click', () => {
         authModal.setAttribute('aria-hidden', 'true');
-        musicPlayer.style.display = 'block'; 
+        musicPlayer.style.display = 'block';
     });
     examplePrompts.forEach(button => {
         button.addEventListener('click', () => {
@@ -90,40 +114,13 @@ document.addEventListener('DOMContentLoaded', () => {
             promptInput.focus();
         });
     });
-    
-    generateBtn.addEventListener('click', () => {
-        const prompt = promptInput.value.trim();
-        if (!prompt) {
-            showMessage('Please describe what you want to create or edit.', 'error');
-            return;
-        }
-
-        const count = getGenerationCount();
-        if (!auth.currentUser && count >= FREE_GENERATION_LIMIT) {
-            authModal.setAttribute('aria-hidden', 'false');
-            musicPlayer.style.display = 'none'; // <-- ADDED: Hide music player when modal shows
-            return;
-        }
-        grecaptcha.execute();
-    });
-
-    promptInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            generateBtn.click();
-        }
-    });
-
-    // --- Aspect Ratio Button Logic ---
     aspectRatioBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             aspectRatioBtns.forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
             selectedAspectRatio = btn.dataset.ratio;
-            console.log(`Aspect ratio set to: ${selectedAspectRatio}`);
         });
     });
-
     imageUploadBtn.addEventListener('click', () => imageUploadInput.click());
     imageUploadInput.addEventListener('change', handleImageUpload);
     removeImageBtn.addEventListener('click', removeUploadedImage);
@@ -136,12 +133,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         musicBtn.classList.toggle('playing');
     });
+    
+    // (Cursor animation logic remains the same)
     let mouseX = 0, mouseY = 0;
     let outlineX = 0, outlineY = 0;
-    window.addEventListener('mousemove', (e) => {
-        mouseX = e.clientX;
-        mouseY = e.clientY;
-    });
+    window.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; });
     const animateCursor = () => {
         cursorDot.style.left = `${mouseX}px`;
         cursorDot.style.top = `${mouseY}px`;
@@ -159,11 +155,42 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-async function generateImage(recaptchaToken) {
+// NEW: Central handler for the generate button
+function handleGenerateClick() {
     const prompt = promptInput.value.trim();
-    const shouldBlur = !auth.currentUser && getGenerationCount() === (FREE_GENERATION_LIMIT -1);
-    
-    musicPlayer.style.display = 'none'; // <-- ADDED: Hide music player when generation starts
+    if (!prompt) {
+        showMessage('Please describe what you want to create or edit.', 'error');
+        return;
+    }
+
+    const count = getGenerationCount();
+    if (!auth.currentUser && count >= FREE_GENERATION_LIMIT) {
+        authModal.setAttribute('aria-hidden', 'false');
+        musicPlayer.style.display = 'none';
+        return;
+    }
+
+    // If user is already verified, generate immediately.
+    // Otherwise, execute reCAPTCHA which will then trigger generation.
+    if (isCaptchaVerified) {
+        generateImage();
+    } else {
+        // Disable button to prevent multiple clicks while verifying
+        generateBtn.disabled = true;
+        generateBtn.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+        grecaptcha.execute();
+    }
+}
+
+
+async function generateImage() {
+    const prompt = promptInput.value.trim();
+    const shouldBlur = !auth.currentUser && getGenerationCount() === (FREE_GENERATION_LIMIT - 1);
+
+    // Disable button and show loading state
+    generateBtn.disabled = true;
+    generateBtn.innerHTML = originalGenerateBtnContent; // Restore icon
+    musicPlayer.style.display = 'none';
     imageGrid.innerHTML = '';
     messageBox.innerHTML = '';
     resultContainer.classList.remove('hidden');
@@ -172,6 +199,7 @@ async function generateImage(recaptchaToken) {
     startTimer();
 
     try {
+        // Use the globally stored reCAPTCHA token for the API call
         const imageUrl = await generateImageWithRetry(prompt, uploadedImageData, recaptchaToken, selectedAspectRatio);
         if (shouldBlur) { lastGeneratedImageUrl = imageUrl; }
         displayImage(imageUrl, prompt, shouldBlur);
@@ -180,11 +208,18 @@ async function generateImage(recaptchaToken) {
     } catch (error) {
         console.error('Image generation failed:', error);
         showMessage(`Sorry, we couldn't generate the image. ${error.message}`, 'error');
+        // If the API fails due to an invalid token, we should re-verify next time.
+        if (error.message.includes('recaptcha')) {
+            isCaptchaVerified = false;
+            recaptchaToken = null;
+        }
     } finally {
         stopTimer();
         loadingIndicator.classList.add('hidden');
         addBackButton();
-        grecaptcha.reset();
+        // IMPORTANT: Re-enable the generate button so the user can go again.
+        generateBtn.disabled = false;
+        // We no longer reset grecaptcha here. Let it manage its own state.
     }
 }
 
@@ -198,7 +233,7 @@ function updateUIForAuthState(user) {
         generationCounterEl.textContent = welcomeText;
         mobileGenerationCounterEl.textContent = welcomeText;
         authModal.setAttribute('aria-hidden', 'true');
-        musicPlayer.style.display = 'block'; // <-- ADDED: Ensure player is visible after sign-in
+        musicPlayer.style.display = 'block';
         if (lastGeneratedImageUrl) {
             const blurredContainer = document.querySelector('.blurred-image-container');
             if (blurredContainer) {
@@ -315,7 +350,7 @@ function displayImage(imageUrl, prompt, shouldBlur = false) {
         overlay.innerHTML = `<h3 class="text-xl font-semibold">Unlock Image</h3><p class="mt-2">Sign in to unlock this image and get unlimited generations.</p><button id="unlock-btn">Sign In to Unlock</button>`;
         overlay.querySelector('#unlock-btn').onclick = () => { 
             authModal.setAttribute('aria-hidden', 'false');
-            musicPlayer.style.display = 'none'; // <-- ADDED: Hide player when modal opens from here too
+            musicPlayer.style.display = 'none';
         };
         imgContainer.appendChild(overlay);
     }
@@ -339,7 +374,7 @@ function addBackButton() {
         messageBox.innerHTML = '';
         promptInput.value = '';
         removeUploadedImage();
-        musicPlayer.style.display = 'block'; // <-- ADDED: Show music player on return
+        musicPlayer.style.display = 'block';
     };
     messageBox.prepend(backButton);
 }
