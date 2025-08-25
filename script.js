@@ -50,17 +50,17 @@ const musicBtn = document.getElementById('music-btn');
 const lofiMusic = document.getElementById('lofi-music');
 const cursorDot = document.querySelector('.cursor-dot');
 const cursorOutline = document.querySelector('.cursor-outline');
+const aspectRatioBtns = document.querySelectorAll('.aspect-ratio-btn');
 
 let timerInterval;
 const FREE_GENERATION_LIMIT = 3;
 let uploadedImageData = null;
 let lastGeneratedImageUrl = null;
+let selectedAspectRatio = '1:1'; // Default aspect ratio
 
 // --- reCAPTCHA Callback Function ---
-// This function is called by Google AFTER the invisible reCAPTCHA is passed
 window.onRecaptchaSuccess = function(token) {
     console.log("Invisible reCAPTCHA check passed. Proceeding with image generation.");
-    // Now that we have a fresh token, we can call the image generation function
     generateImage(token);
 };
 
@@ -86,7 +86,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     
-    // The main click event for the generate button
     generateBtn.addEventListener('click', () => {
         const prompt = promptInput.value.trim();
         if (!prompt) {
@@ -99,17 +98,27 @@ document.addEventListener('DOMContentLoaded', () => {
             authModal.setAttribute('aria-hidden', 'false');
             return;
         }
-
-        // Instead of generating the image directly, we execute reCAPTCHA.
-        // reCAPTCHA will then call our onRecaptchaSuccess function with a token.
         grecaptcha.execute();
     });
 
     promptInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            generateBtn.click(); // Trigger the button click to start the reCAPTCHA flow
+            generateBtn.click();
         }
+    });
+
+    // --- Aspect Ratio Button Logic ---
+    aspectRatioBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Remove 'selected' from all buttons
+            aspectRatioBtns.forEach(b => b.classList.remove('selected'));
+            // Add 'selected' to the clicked button
+            btn.classList.add('selected');
+            // Update the state
+            selectedAspectRatio = btn.dataset.ratio;
+            console.log(`Aspect ratio set to: ${selectedAspectRatio}`);
+        });
     });
 
     imageUploadBtn.addEventListener('click', () => imageUploadInput.click());
@@ -147,12 +156,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// The main generation function now ACCEPTS the token as an argument
 async function generateImage(recaptchaToken) {
     const prompt = promptInput.value.trim();
-    
-    // We don't need the prompt check here anymore as it's done before calling grecaptcha.execute()
-
     const shouldBlur = !auth.currentUser && getGenerationCount() === (FREE_GENERATION_LIMIT -1);
     
     imageGrid.innerHTML = '';
@@ -163,7 +168,8 @@ async function generateImage(recaptchaToken) {
     startTimer();
 
     try {
-        const imageUrl = await generateImageWithRetry(prompt, uploadedImageData, recaptchaToken);
+        // Pass the selected aspect ratio to the backend
+        const imageUrl = await generateImageWithRetry(prompt, uploadedImageData, recaptchaToken, selectedAspectRatio);
         if (shouldBlur) { lastGeneratedImageUrl = imageUrl; }
         displayImage(imageUrl, prompt, shouldBlur);
         incrementTotalGenerations();
@@ -175,11 +181,9 @@ async function generateImage(recaptchaToken) {
         stopTimer();
         loadingIndicator.classList.add('hidden');
         addBackButton();
-        // IMPORTANT: We must reset the reCAPTCHA widget so it can be used again for the next click.
         grecaptcha.reset();
     }
 }
-
 
 function handleAuthAction() { if (auth.currentUser) signOut(auth); else signInWithGoogle(); }
 function signInWithGoogle() { signInWithPopup(auth, provider).then(result => updateUIForAuthState(result.user)).catch(error => console.error("Authentication Error:", error)); }
@@ -241,14 +245,14 @@ function removeUploadedImage() {
     promptInput.placeholder = "An oil painting of a futuristic city skyline at dusk...";
 }
 
-
-async function generateImageWithRetry(prompt, imageData, token, maxRetries = 3) {
+async function generateImageWithRetry(prompt, imageData, token, aspectRatio, maxRetries = 3) {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
             const response = await fetch('/api/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt, imageData, recaptchaToken: token })
+                // Send the aspect ratio in the request body
+                body: JSON.stringify({ prompt, imageData, recaptchaToken: token, aspectRatio: aspectRatio })
             });
 
             if (!response.ok) {
@@ -315,7 +319,7 @@ function showMessage(text, type = 'info') {
     const messageEl = document.createElement('div');
     messageEl.className = `p-4 rounded-lg ${type === 'error' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'} fade-in-slide-up`;
     messageEl.textContent = text;
-    messageBox.innerHTML = ''; // Clear previous messages
+    messageBox.innerHTML = '';
     messageBox.appendChild(messageEl);
 }
 function addBackButton() {
