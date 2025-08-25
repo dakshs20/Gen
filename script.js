@@ -21,7 +21,6 @@ const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
 // --- DOM Element References ---
-const recaptchaGate = document.getElementById('recaptcha-gate');
 const appContainer = document.getElementById('app-container');
 const promptInput = document.getElementById('prompt-input');
 const generateBtn = document.getElementById('generate-btn');
@@ -56,28 +55,14 @@ let timerInterval;
 const FREE_GENERATION_LIMIT = 3;
 let uploadedImageData = null;
 let lastGeneratedImageUrl = null;
-let recaptchaToken = null; // To store the reCAPTCHA token
 
-// --- reCAPTCHA Callback Functions ---
-// This function runs when the user successfully completes the reCAPTCHA
+// --- reCAPTCHA Callback Function ---
+// This function is called by Google AFTER the invisible reCAPTCHA is passed
 window.onRecaptchaSuccess = function(token) {
-    console.log("reCAPTCHA check passed. Unlocking website.");
-    recaptchaToken = token;
-    
-    // Hide the gate and show the main app
-    recaptchaGate.style.display = 'none';
-    appContainer.classList.remove('hidden');
-    appContainer.classList.add('flex'); // Make sure it's visible and flex
+    console.log("Invisible reCAPTCHA check passed. Proceeding with image generation.");
+    // Now that we have a fresh token, we can call the image generation function
+    generateImage(token);
 };
-
-// This function runs when the reCAPTCHA expires
-window.onRecaptchaExpired = function() {
-    console.log("reCAPTCHA expired.");
-    recaptchaToken = null;
-    // Optional: you could show the gate again if it expires,
-    // but for now we'll just log it.
-};
-
 
 // --- Main App Logic ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -100,13 +85,33 @@ document.addEventListener('DOMContentLoaded', () => {
             promptInput.focus();
         });
     });
+    
+    // The main click event for the generate button
+    generateBtn.addEventListener('click', () => {
+        const prompt = promptInput.value.trim();
+        if (!prompt) {
+            showMessage('Please describe what you want to create or edit.', 'error');
+            return;
+        }
+
+        const count = getGenerationCount();
+        if (!auth.currentUser && count >= FREE_GENERATION_LIMIT) {
+            authModal.setAttribute('aria-hidden', 'false');
+            return;
+        }
+
+        // Instead of generating the image directly, we execute reCAPTCHA.
+        // reCAPTCHA will then call our onRecaptchaSuccess function with a token.
+        grecaptcha.execute();
+    });
+
     promptInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            generateImage();
+            generateBtn.click(); // Trigger the button click to start the reCAPTCHA flow
         }
     });
-    generateBtn.addEventListener('click', generateImage);
+
     imageUploadBtn.addEventListener('click', () => imageUploadInput.click());
     imageUploadInput.addEventListener('change', handleImageUpload);
     removeImageBtn.addEventListener('click', removeUploadedImage);
@@ -141,6 +146,40 @@ document.addEventListener('DOMContentLoaded', () => {
         el.addEventListener('mouseout', () => cursorOutline.classList.remove('cursor-hover'));
     });
 });
+
+// The main generation function now ACCEPTS the token as an argument
+async function generateImage(recaptchaToken) {
+    const prompt = promptInput.value.trim();
+    
+    // We don't need the prompt check here anymore as it's done before calling grecaptcha.execute()
+
+    const shouldBlur = !auth.currentUser && getGenerationCount() === (FREE_GENERATION_LIMIT -1);
+    
+    imageGrid.innerHTML = '';
+    messageBox.innerHTML = '';
+    resultContainer.classList.remove('hidden');
+    loadingIndicator.classList.remove('hidden');
+    generatorUI.classList.add('hidden');
+    startTimer();
+
+    try {
+        const imageUrl = await generateImageWithRetry(prompt, uploadedImageData, recaptchaToken);
+        if (shouldBlur) { lastGeneratedImageUrl = imageUrl; }
+        displayImage(imageUrl, prompt, shouldBlur);
+        incrementTotalGenerations();
+        if (!auth.currentUser) { incrementGenerationCount(); }
+    } catch (error) {
+        console.error('Image generation failed:', error);
+        showMessage(`Sorry, we couldn't generate the image. ${error.message}`, 'error');
+    } finally {
+        stopTimer();
+        loadingIndicator.classList.add('hidden');
+        addBackButton();
+        // IMPORTANT: We must reset the reCAPTCHA widget so it can be used again for the next click.
+        grecaptcha.reset();
+    }
+}
+
 
 function handleAuthAction() { if (auth.currentUser) signOut(auth); else signInWithGoogle(); }
 function signInWithGoogle() { signInWithPopup(auth, provider).then(result => updateUIForAuthState(result.user)).catch(error => console.error("Authentication Error:", error)); }
@@ -201,49 +240,7 @@ function removeUploadedImage() {
     imagePreview.src = '';
     promptInput.placeholder = "An oil painting of a futuristic city skyline at dusk...";
 }
-async function generateImage() {
-    const prompt = promptInput.value.trim();
-    if (!prompt) {
-        showMessage('Please describe what you want to create or edit.', 'error');
-        return;
-    }
 
-    // Check if reCAPTCHA token exists from the initial check
-    if (!recaptchaToken) {
-        showMessage('reCAPTCHA verification is missing. Please refresh the page.', 'error');
-        return;
-    }
-
-    const count = getGenerationCount();
-    if (!auth.currentUser && count > FREE_GENERATION_LIMIT) {
-        authModal.setAttribute('aria-hidden', 'false');
-        return;
-    }
-    const shouldBlur = !auth.currentUser && count === FREE_GENERATION_LIMIT;
-    imageGrid.innerHTML = '';
-    messageBox.innerHTML = '';
-    resultContainer.classList.remove('hidden');
-    loadingIndicator.classList.remove('hidden');
-    generatorUI.classList.add('hidden');
-    startTimer();
-    try {
-        // Pass the token to the backend
-        const imageUrl = await generateImageWithRetry(prompt, uploadedImageData, recaptchaToken);
-        if (shouldBlur) { lastGeneratedImageUrl = imageUrl; }
-        displayImage(imageUrl, prompt, shouldBlur);
-        incrementTotalGenerations();
-        if (!auth.currentUser) { incrementGenerationCount(); }
-    } catch (error) {
-        console.error('Image generation failed:', error);
-        showMessage(`Sorry, we couldn't generate the image. ${error.message}`, 'error');
-    } finally {
-        stopTimer();
-        loadingIndicator.classList.add('hidden');
-        addBackButton();
-        // Since the reCAPTCHA is only done once, we don't reset it here.
-        // The token will be reused for this session.
-    }
-}
 
 async function generateImageWithRetry(prompt, imageData, token, maxRetries = 3) {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
@@ -251,7 +248,6 @@ async function generateImageWithRetry(prompt, imageData, token, maxRetries = 3) 
             const response = await fetch('/api/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                // Send the reCAPTCHA token in the request body
                 body: JSON.stringify({ prompt, imageData, recaptchaToken: token })
             });
 
