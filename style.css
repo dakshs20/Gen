@@ -2,34 +2,13 @@
 body {
     font-family: 'Inter', sans-serif;
     background-color: #f7f7f7;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    /* We remove the alignment here so the app container can be at the top */
     min-height: 100vh;
     color: #2d2d2d;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     cursor: none; /* Hide the default cursor */
 }
-
-/* --- Maintenance Overlay Styles --- */
-#maintenance-overlay[data-status="live"] {
-    transform: translateY(-100%);
-}
-
-@keyframes line-load {
-    0% {
-        transform: translateX(-100%);
-    }
-    100% {
-        transform: translateX(100%);
-    }
-}
-
-.animate-line-load {
-    animation: line-load 2s linear infinite;
-}
-
 
 /* --- REBUILT Custom Cursor --- */
 .cursor-dot,
