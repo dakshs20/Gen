@@ -51,6 +51,7 @@ const lofiMusic = document.getElementById('lofi-music');
 const cursorDot = document.querySelector('.cursor-dot');
 const cursorOutline = document.querySelector('.cursor-outline');
 const aspectRatioBtns = document.querySelectorAll('.aspect-ratio-btn');
+const musicPlayer = document.getElementById('music-player'); // <-- ADDED: Reference to the music player
 
 let timerInterval;
 const FREE_GENERATION_LIMIT = 3;
@@ -78,7 +79,11 @@ document.addEventListener('DOMContentLoaded', () => {
     authBtn.addEventListener('click', handleAuthAction);
     mobileAuthBtn.addEventListener('click', handleAuthAction);
     googleSignInBtn.addEventListener('click', signInWithGoogle);
-    closeModalBtn.addEventListener('click', () => authModal.setAttribute('aria-hidden', 'true'));
+    // MODIFIED: Show music player when modal is closed
+    closeModalBtn.addEventListener('click', () => {
+        authModal.setAttribute('aria-hidden', 'true');
+        musicPlayer.style.display = 'block'; 
+    });
     examplePrompts.forEach(button => {
         button.addEventListener('click', () => {
             promptInput.value = button.innerText.trim();
@@ -96,6 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const count = getGenerationCount();
         if (!auth.currentUser && count >= FREE_GENERATION_LIMIT) {
             authModal.setAttribute('aria-hidden', 'false');
+            musicPlayer.style.display = 'none'; // <-- ADDED: Hide music player when modal shows
             return;
         }
         grecaptcha.execute();
@@ -111,11 +117,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Aspect Ratio Button Logic ---
     aspectRatioBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            // Remove 'selected' from all buttons
             aspectRatioBtns.forEach(b => b.classList.remove('selected'));
-            // Add 'selected' to the clicked button
             btn.classList.add('selected');
-            // Update the state
             selectedAspectRatio = btn.dataset.ratio;
             console.log(`Aspect ratio set to: ${selectedAspectRatio}`);
         });
@@ -160,6 +163,7 @@ async function generateImage(recaptchaToken) {
     const prompt = promptInput.value.trim();
     const shouldBlur = !auth.currentUser && getGenerationCount() === (FREE_GENERATION_LIMIT -1);
     
+    musicPlayer.style.display = 'none'; // <-- ADDED: Hide music player when generation starts
     imageGrid.innerHTML = '';
     messageBox.innerHTML = '';
     resultContainer.classList.remove('hidden');
@@ -168,7 +172,6 @@ async function generateImage(recaptchaToken) {
     startTimer();
 
     try {
-        // Pass the selected aspect ratio to the backend
         const imageUrl = await generateImageWithRetry(prompt, uploadedImageData, recaptchaToken, selectedAspectRatio);
         if (shouldBlur) { lastGeneratedImageUrl = imageUrl; }
         displayImage(imageUrl, prompt, shouldBlur);
@@ -195,6 +198,7 @@ function updateUIForAuthState(user) {
         generationCounterEl.textContent = welcomeText;
         mobileGenerationCounterEl.textContent = welcomeText;
         authModal.setAttribute('aria-hidden', 'true');
+        musicPlayer.style.display = 'block'; // <-- ADDED: Ensure player is visible after sign-in
         if (lastGeneratedImageUrl) {
             const blurredContainer = document.querySelector('.blurred-image-container');
             if (blurredContainer) {
@@ -251,7 +255,6 @@ async function generateImageWithRetry(prompt, imageData, token, aspectRatio, max
             const response = await fetch('/api/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                // Send the aspect ratio in the request body
                 body: JSON.stringify({ prompt, imageData, recaptchaToken: token, aspectRatio: aspectRatio })
             });
 
@@ -310,7 +313,10 @@ function displayImage(imageUrl, prompt, shouldBlur = false) {
         const overlay = document.createElement('div');
         overlay.className = 'unlock-overlay';
         overlay.innerHTML = `<h3 class="text-xl font-semibold">Unlock Image</h3><p class="mt-2">Sign in to unlock this image and get unlimited generations.</p><button id="unlock-btn">Sign In to Unlock</button>`;
-        overlay.querySelector('#unlock-btn').onclick = () => { authModal.setAttribute('aria-hidden', 'false'); };
+        overlay.querySelector('#unlock-btn').onclick = () => { 
+            authModal.setAttribute('aria-hidden', 'false');
+            musicPlayer.style.display = 'none'; // <-- ADDED: Hide player when modal opens from here too
+        };
         imgContainer.appendChild(overlay);
     }
     imageGrid.appendChild(imgContainer);
@@ -333,6 +339,7 @@ function addBackButton() {
         messageBox.innerHTML = '';
         promptInput.value = '';
         removeUploadedImage();
+        musicPlayer.style.display = 'block'; // <-- ADDED: Show music player on return
     };
     messageBox.prepend(backButton);
 }
