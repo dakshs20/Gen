@@ -4,23 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <!-- SEO Optimized Title -->
     <title>Free & Fastest AI Image Generator | GenArt</title>
     
-    <!-- SEO Optimized Meta Description -->
     <meta name="description" content="Experience the fastest AI image generator. GenArt is a free tool that creates stunning visuals and AI avatars from text in under 17 seconds.">
-    
-    <!-- Keywords for SEO -->
     <meta name="keywords" content="Free AI Image Generator, Fastest AI Image Generator, GenArt, AI Avatar, Create AI Art, AI Photo Editor, Text to Image, Generative AI">
-    
-    <!-- Open Graph Meta Tags for Social Sharing -->
     <meta property="og:title" content="Free & Fastest AI Image Generator | GenArt">
     <meta property="og:description" content="The fastest free tool for generating AI images and avatars. Create stunning art in under 17 seconds.">
     <meta property="og:image" content="https://iili.io/FsAoG2I.md.png">
     <meta property="og:url" content="YOUR_WEBSITE_URL_HERE">
     <meta property="og:type" content="website">
-
-    <!-- Twitter Card Meta Tags -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Free & Fastest AI Image Generator | GenArt">
     <meta name="twitter:description" content="The fastest free tool for generating AI images and avatars. Create stunning art in under 17 seconds.">
@@ -30,7 +22,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="style.css">
 
-    <!-- JSON-LD Structured Data for SEO -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -39,27 +30,38 @@
       "applicationCategory": "DesignApplication",
       "operatingSystem": "Web",
       "description": "The fastest and free AI image generator and avatar creator. Allows users to create stunning visuals from text prompts and edit images in under 17 seconds.",
-      "featureList": [
-        "AI Image Generation",
-        "Text-to-Image Conversion",
-        "AI Photo Editing",
-        "AI Avatar Creation",
-        "Fast Generation"
-      ],
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD"
-      }
+      "featureList": [ "AI Image Generation", "Text-to-Image Conversion", "AI Photo Editing", "AI Avatar Creation", "Fast Generation" ],
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
     }
     </script>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </head>
 <body>
     <!-- Custom Cursor -->
     <div class="cursor-dot"></div>
     <div class="cursor-outline"></div>
 
-    <div id="app-container" class="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 flex flex-col min-h-screen">
+    <!-- Fullscreen reCAPTCHA Verification Page -->
+    <div id="recaptcha-gate" class="fixed inset-0 bg-gray-100 flex flex-col items-center justify-center z-[100]">
+        <div class="text-center p-8">
+            <img src="https://iili.io/FsAoG2I.md.png" alt="GenArt Logo" class="h-8 w-auto mx-auto mb-6">
+            <h1 class="text-2xl font-medium text-gray-800 mb-2">Verifying you are human.</h1>
+            <p class="text-gray-500 mb-8">This may take a few seconds.</p>
+            
+            <!-- The reCAPTCHA widget -->
+            <div class="g-recaptcha inline-block" 
+                 data-sitekey="6LefMrErAAAAAMsrpbO_0_T5ipjVN74QVod_83tz"
+                 data-callback="onRecaptchaSuccess"
+                 data-expired-callback="onRecaptchaExpired">
+            </div>
+            
+            <p class="text-sm text-gray-400 mt-8">GenArt needs to review the security of your connection before proceeding.</p>
+        </div>
+    </div>
+
+
+    <!-- Main App Container (Initially Hidden) -->
+    <div id="app-container" class="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 flex-col min-h-screen hidden">
         
         <header class="relative flex justify-between items-center py-5 px-2 fade-in-slide-up z-20">
             <img src="https://iili.io/FsAoG2I.md.png" alt="GenArt Logo - Free and Fastest AI Image Generator" class="h-6 w-auto">
@@ -73,7 +75,7 @@
             <!-- Mobile Menu Button -->
             <div class="md:hidden">
                 <button id="mobile-menu-btn" class="p-2 rounded-md text-gray-500 hover:text-gray-800 hover:bg-gray-100">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                 </button>
             </div>
             <!-- Mobile Drawer Menu -->
