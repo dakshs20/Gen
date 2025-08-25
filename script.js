@@ -21,6 +21,8 @@ const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
 // --- DOM Element References ---
+const recaptchaGate = document.getElementById('recaptcha-gate');
+const appContainer = document.getElementById('app-container');
 const promptInput = document.getElementById('prompt-input');
 const generateBtn = document.getElementById('generate-btn');
 const resultContainer = document.getElementById('result-container');
@@ -54,6 +56,28 @@ let timerInterval;
 const FREE_GENERATION_LIMIT = 3;
 let uploadedImageData = null;
 let lastGeneratedImageUrl = null;
+let recaptchaToken = null; // To store the reCAPTCHA token
+
+// --- reCAPTCHA Callback Functions ---
+// This function runs when the user successfully completes the reCAPTCHA
+window.onRecaptchaSuccess = function(token) {
+    console.log("reCAPTCHA check passed. Unlocking website.");
+    recaptchaToken = token;
+    
+    // Hide the gate and show the main app
+    recaptchaGate.style.display = 'none';
+    appContainer.classList.remove('hidden');
+    appContainer.classList.add('flex'); // Make sure it's visible and flex
+};
+
+// This function runs when the reCAPTCHA expires
+window.onRecaptchaExpired = function() {
+    console.log("reCAPTCHA expired.");
+    recaptchaToken = null;
+    // Optional: you could show the gate again if it expires,
+    // but for now we'll just log it.
+};
+
 
 // --- Main App Logic ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -183,6 +207,13 @@ async function generateImage() {
         showMessage('Please describe what you want to create or edit.', 'error');
         return;
     }
+
+    // Check if reCAPTCHA token exists from the initial check
+    if (!recaptchaToken) {
+        showMessage('reCAPTCHA verification is missing. Please refresh the page.', 'error');
+        return;
+    }
+
     const count = getGenerationCount();
     if (!auth.currentUser && count > FREE_GENERATION_LIMIT) {
         authModal.setAttribute('aria-hidden', 'false');
@@ -196,37 +227,35 @@ async function generateImage() {
     generatorUI.classList.add('hidden');
     startTimer();
     try {
-        const imageUrl = await generateImageWithRetry(prompt, uploadedImageData);
+        // Pass the token to the backend
+        const imageUrl = await generateImageWithRetry(prompt, uploadedImageData, recaptchaToken);
         if (shouldBlur) { lastGeneratedImageUrl = imageUrl; }
         displayImage(imageUrl, prompt, shouldBlur);
         incrementTotalGenerations();
         if (!auth.currentUser) { incrementGenerationCount(); }
     } catch (error) {
         console.error('Image generation failed:', error);
-        // This is where the error you see is displayed.
         showMessage(`Sorry, we couldn't generate the image. ${error.message}`, 'error');
     } finally {
         stopTimer();
         loadingIndicator.classList.add('hidden');
         addBackButton();
+        // Since the reCAPTCHA is only done once, we don't reset it here.
+        // The token will be reused for this session.
     }
 }
 
-// This function calls your backend. It is confirmed to be correct.
-// If it fails, the problem is that it cannot reach '/api/generate'.
-async function generateImageWithRetry(prompt, imageData, maxRetries = 3) {
+async function generateImageWithRetry(prompt, imageData, token, maxRetries = 3) {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
             const response = await fetch('/api/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt, imageData })
+                // Send the reCAPTCHA token in the request body
+                body: JSON.stringify({ prompt, imageData, recaptchaToken: token })
             });
 
-            // If the response is not ok, we try to parse the error message.
             if (!response.ok) {
-                // This is where the "Unexpected token 'T'" error happens,
-                // because the response is a 404 HTML page, not JSON.
                 const errorResult = await response.json();
                 throw new Error(errorResult.error || `API Error: ${response.status}`);
             }
@@ -288,9 +317,9 @@ function displayImage(imageUrl, prompt, shouldBlur = false) {
 }
 function showMessage(text, type = 'info') {
     const messageEl = document.createElement('div');
-    messageEl.className = `p-2 rounded-lg ${type === 'error' ? 'text-red-600' : 'text-gray-600'} fade-in-slide-up`;
+    messageEl.className = `p-4 rounded-lg ${type === 'error' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'} fade-in-slide-up`;
     messageEl.textContent = text;
-    messageBox.innerHTML = '';
+    messageBox.innerHTML = ''; // Clear previous messages
     messageBox.appendChild(messageEl);
 }
 function addBackButton() {
@@ -325,5 +354,3 @@ function stopTimer() {
     clearInterval(timerInterval);
     progressBar.style.width = '100%';
 }
-
-
