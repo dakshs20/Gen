@@ -1,7 +1,8 @@
 // Import Firebase modules
+// NEW: We need more tools from Firestore to save and get our pictures
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, doc, setDoc, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, increment, collection, addDoc, getDocs, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -52,11 +53,20 @@ const cursorDot = document.querySelector('.cursor-dot');
 const cursorOutline = document.querySelector('.cursor-outline');
 const aspectRatioBtns = document.querySelectorAll('.aspect-ratio-btn');
 
+// NEW: Library DOM References
+const libraryBtn = document.getElementById('library-btn');
+const mobileLibraryBtn = document.getElementById('mobile-library-btn');
+const libraryModal = document.getElementById('library-modal');
+const closeLibraryBtn = document.getElementById('close-library-btn');
+const libraryGrid = document.getElementById('library-grid');
+const libraryEmptyState = document.getElementById('library-empty-state');
+
+
 let timerInterval;
 const FREE_GENERATION_LIMIT = 3;
 let uploadedImageData = null;
 let lastGeneratedImageUrl = null;
-let selectedAspectRatio = '1:1'; // Default aspect ratio
+let selectedAspectRatio = '1:1';
 
 // --- reCAPTCHA Callback Function ---
 window.onRecaptchaSuccess = function(token) {
@@ -108,18 +118,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- Aspect Ratio Button Logic ---
     aspectRatioBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            // Remove 'selected' from all buttons
             aspectRatioBtns.forEach(b => b.classList.remove('selected'));
-            // Add 'selected' to the clicked button
             btn.classList.add('selected');
-            // Update the state
             selectedAspectRatio = btn.dataset.ratio;
-            console.log(`Aspect ratio set to: ${selectedAspectRatio}`);
         });
     });
+
+    // NEW: Library Button Listeners
+    libraryBtn.addEventListener('click', openLibrary);
+    mobileLibraryBtn.addEventListener('click', openLibrary);
+    closeLibraryBtn.addEventListener('click', () => libraryModal.setAttribute('aria-hidden', 'true'));
+
 
     imageUploadBtn.addEventListener('click', () => imageUploadInput.click());
     imageUploadInput.addEventListener('change', handleImageUpload);
@@ -168,10 +179,15 @@ async function generateImage(recaptchaToken) {
     startTimer();
 
     try {
-        // Pass the selected aspect ratio to the backend
         const imageUrl = await generateImageWithRetry(prompt, uploadedImageData, recaptchaToken, selectedAspectRatio);
         if (shouldBlur) { lastGeneratedImageUrl = imageUrl; }
         displayImage(imageUrl, prompt, shouldBlur);
+
+        // NEW: Save the image to the user's library if they are signed in
+        if (auth.currentUser && !shouldBlur) {
+            await saveImageToLibrary(prompt, imageUrl, selectedAspectRatio);
+        }
+
         incrementTotalGenerations();
         if (!auth.currentUser) { incrementGenerationCount(); }
     } catch (error) {
@@ -187,6 +203,7 @@ async function generateImage(recaptchaToken) {
 
 function handleAuthAction() { if (auth.currentUser) signOut(auth); else signInWithGoogle(); }
 function signInWithGoogle() { signInWithPopup(auth, provider).then(result => updateUIForAuthState(result.user)).catch(error => console.error("Authentication Error:", error)); }
+
 function updateUIForAuthState(user) {
     if (user) {
         const welcomeText = `Welcome, ${user.displayName.split(' ')[0]}`;
@@ -195,6 +212,11 @@ function updateUIForAuthState(user) {
         generationCounterEl.textContent = welcomeText;
         mobileGenerationCounterEl.textContent = welcomeText;
         authModal.setAttribute('aria-hidden', 'true');
+        
+        // NEW: Show the Library buttons only when signed in
+        libraryBtn.classList.remove('hidden');
+        mobileLibraryBtn.classList.remove('hidden');
+
         if (lastGeneratedImageUrl) {
             const blurredContainer = document.querySelector('.blurred-image-container');
             if (blurredContainer) {
@@ -209,8 +231,73 @@ function updateUIForAuthState(user) {
         authBtn.textContent = 'Sign In';
         mobileAuthBtn.textContent = 'Sign In';
         updateGenerationCounter();
+        // NEW: Hide the Library buttons when signed out
+        libraryBtn.classList.add('hidden');
+        mobileLibraryBtn.classList.add('hidden');
     }
 }
+
+// --- NEW LIBRARY FUNCTIONS ---
+
+// This opens the photo album
+async function openLibrary() {
+    libraryGrid.innerHTML = ''; // Clear old pictures
+    libraryEmptyState.classList.add('hidden');
+    libraryModal.setAttribute('aria-hidden', 'false');
+
+    const user = auth.currentUser;
+    if (!user) return;
+
+    // Ask the filing cabinet for all pictures belonging to this user
+    const userImagesRef = collection(db, 'users', user.uid, 'images');
+    const q = query(userImagesRef); // We can add 'orderBy' here later if we want
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+        libraryEmptyState.classList.remove('hidden');
+    } else {
+        querySnapshot.forEach((doc) => {
+            const imageData = doc.data();
+            // Create a new picture frame for each picture and add it to the album
+            const imageElement = document.createElement('div');
+            imageElement.className = 'library-image-container';
+            imageElement.innerHTML = `
+                <img src="${imageData.imageUrl}" alt="${imageData.prompt}">
+                <div class="library-image-overlay">
+                    <p class="library-image-prompt">${imageData.prompt}</p>
+                </div>
+            `;
+            // Add an action: if you click a picture, it puts the prompt back in the box!
+            imageElement.addEventListener('click', () => {
+                promptInput.value = imageData.prompt;
+                libraryModal.setAttribute('aria-hidden', 'true');
+            });
+            libraryGrid.appendChild(imageElement);
+        });
+    }
+}
+
+// This saves a picture to the filing cabinet
+async function saveImageToLibrary(prompt, imageUrl, aspectRatio) {
+    const user = auth.currentUser;
+    if (!user) return; // Can't save if nobody is signed in
+
+    try {
+        // Create a new document in the user's personal 'images' folder
+        const userImagesRef = collection(db, 'users', user.uid, 'images');
+        await addDoc(userImagesRef, {
+            prompt: prompt,
+            imageUrl: imageUrl,
+            aspectRatio: aspectRatio,
+            createdAt: serverTimestamp() // Add a timestamp
+        });
+        console.log("Image saved to library!");
+    } catch (error) {
+        console.error("Error saving image to library: ", error);
+    }
+}
+
+
 function getGenerationCount() { return parseInt(localStorage.getItem('generationCount') || '0'); }
 function incrementGenerationCount() {
     const newCount = getGenerationCount() + 1;
@@ -251,7 +338,6 @@ async function generateImageWithRetry(prompt, imageData, token, aspectRatio, max
             const response = await fetch('/api/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                // Send the aspect ratio in the request body
                 body: JSON.stringify({ prompt, imageData, recaptchaToken: token, aspectRatio: aspectRatio })
             });
 
