@@ -423,6 +423,14 @@ textarea::-webkit-scrollbar-thumb:hover {
 
 /* --- Mobile Responsiveness --- */
 @media (max-width: 768px) {
+    /* THE FIX IS HERE: Hide custom cursor on touch devices */
+    body {
+        cursor: auto;
+    }
+    .cursor-dot, .cursor-outline {
+        display: none;
+    }
+
     .gallery-image {
         height: 240px;
         margin: 0 0.5rem;
