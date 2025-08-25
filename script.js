@@ -21,6 +21,7 @@ const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
 // --- DOM Element References ---
+const appContainer = document.getElementById('app-container');
 const promptInput = document.getElementById('prompt-input');
 const generateBtn = document.getElementById('generate-btn');
 const resultContainer = document.getElementById('result-container');
@@ -50,41 +51,18 @@ const lofiMusic = document.getElementById('lofi-music');
 const cursorDot = document.querySelector('.cursor-dot');
 const cursorOutline = document.querySelector('.cursor-outline');
 const aspectRatioBtns = document.querySelectorAll('.aspect-ratio-btn');
-const musicPlayer = document.getElementById('music-player');
 
-// --- State Variables ---
 let timerInterval;
 const FREE_GENERATION_LIMIT = 3;
 let uploadedImageData = null;
 let lastGeneratedImageUrl = null;
-let selectedAspectRatio = '1:1';
-const originalGenerateBtnContent = generateBtn.innerHTML;
-
-
-// --- reCAPTCHA Callback Function ---
-// This function is called by Google with a fresh, single-use token.
-window.onRecaptchaSuccess = function(token) {
-    console.log("Invisible reCAPTCHA check passed. Proceeding with image generation.");
-    // Immediately use the fresh token to generate the image.
-    generateImage(token);
-};
+let selectedAspectRatio = '1:1'; // Default aspect ratio
 
 // --- Main App Logic ---
 document.addEventListener('DOMContentLoaded', () => {
     onAuthStateChanged(auth, user => {
         updateUIForAuthState(user);
     });
-
-    // --- Event Listeners ---
-    generateBtn.addEventListener('click', handleGenerateClick);
-    promptInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleGenerateClick();
-        }
-    });
-    
-    // (Other event listeners remain the same)
     mobileMenuBtn.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
     document.addEventListener('click', (event) => {
         if (!mobileMenu.contains(event.target) && !mobileMenuBtn.contains(event.target)) {
@@ -94,16 +72,38 @@ document.addEventListener('DOMContentLoaded', () => {
     authBtn.addEventListener('click', handleAuthAction);
     mobileAuthBtn.addEventListener('click', handleAuthAction);
     googleSignInBtn.addEventListener('click', signInWithGoogle);
-    closeModalBtn.addEventListener('click', () => {
-        authModal.setAttribute('aria-hidden', 'true');
-        musicPlayer.style.display = 'block';
-    });
+    closeModalBtn.addEventListener('click', () => authModal.setAttribute('aria-hidden', 'true'));
     examplePrompts.forEach(button => {
         button.addEventListener('click', () => {
             promptInput.value = button.innerText.trim();
             promptInput.focus();
         });
     });
+    
+    // UPDATED: Generate button now calls generateImage directly
+    generateBtn.addEventListener('click', () => {
+        const prompt = promptInput.value.trim();
+        if (!prompt) {
+            showMessage('Please describe what you want to create or edit.', 'error');
+            return;
+        }
+
+        const count = getGenerationCount();
+        if (!auth.currentUser && count >= FREE_GENERATION_LIMIT) {
+            authModal.setAttribute('aria-hidden', 'false');
+            return;
+        }
+        // Directly call the image generation function
+        generateImage();
+    });
+
+    promptInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            generateBtn.click();
+        }
+    });
+
     aspectRatioBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             aspectRatioBtns.forEach(b => b.classList.remove('selected'));
@@ -111,6 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
             selectedAspectRatio = btn.dataset.ratio;
         });
     });
+
     imageUploadBtn.addEventListener('click', () => imageUploadInput.click());
     imageUploadInput.addEventListener('change', handleImageUpload);
     removeImageBtn.addEventListener('click', removeUploadedImage);
@@ -123,11 +124,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         musicBtn.classList.toggle('playing');
     });
-    
-    // (Cursor animation logic remains the same)
     let mouseX = 0, mouseY = 0;
     let outlineX = 0, outlineY = 0;
-    window.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; });
+    window.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+    });
     const animateCursor = () => {
         cursorDot.style.left = `${mouseX}px`;
         cursorDot.style.top = `${mouseY}px`;
@@ -145,39 +147,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// MODIFIED: This function now only validates input and triggers the reCAPTCHA.
-function handleGenerateClick() {
-    // Prevent multiple clicks while reCAPTCHA is running.
-    if (generateBtn.disabled) return;
-
+// UPDATED: Function no longer needs a token parameter
+async function generateImage() {
     const prompt = promptInput.value.trim();
-    if (!prompt) {
-        showMessage('Please describe what you want to create or edit.', 'error');
-        return;
-    }
-
-    const count = getGenerationCount();
-    if (!auth.currentUser && count >= FREE_GENERATION_LIMIT) {
-        authModal.setAttribute('aria-hidden', 'false');
-        musicPlayer.style.display = 'none';
-        return;
-    }
-
-    // Disable the button and show a loading spinner.
-    generateBtn.disabled = true;
-    generateBtn.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+    const shouldBlur = !auth.currentUser && getGenerationCount() === (FREE_GENERATION_LIMIT -1);
     
-    // Execute reCAPTCHA. The onRecaptchaSuccess callback will handle the rest.
-    grecaptcha.execute();
-}
-
-
-async function generateImage(recaptchaToken) {
-    const prompt = promptInput.value.trim();
-    const shouldBlur = !auth.currentUser && getGenerationCount() === (FREE_GENERATION_LIMIT - 1);
-
-    // The button is already disabled, now we transition the UI.
-    musicPlayer.style.display = 'none';
     imageGrid.innerHTML = '';
     messageBox.innerHTML = '';
     resultContainer.classList.remove('hidden');
@@ -186,26 +160,20 @@ async function generateImage(recaptchaToken) {
     startTimer();
 
     try {
-        // Use the fresh reCAPTCHA token for the API call.
-        const imageUrl = await generateImageWithRetry(prompt, uploadedImageData, recaptchaToken, selectedAspectRatio);
+        // UPDATED: Call generateImageWithRetry without a token
+        const imageUrl = await generateImageWithRetry(prompt, uploadedImageData, selectedAspectRatio);
         if (shouldBlur) { lastGeneratedImageUrl = imageUrl; }
         displayImage(imageUrl, prompt, shouldBlur);
         incrementTotalGenerations();
         if (!auth.currentUser) { incrementGenerationCount(); }
     } catch (error) {
         console.error('Image generation failed:', error);
-        // Provide a more user-friendly error message.
-        const errorMessage = error.message.includes('recaptcha') 
-            ? "You are not human! reCAPTCHA verification failed."
-            : `Sorry, we couldn't generate the image.`;
-        showMessage(errorMessage, 'error');
+        showMessage(`Sorry, we couldn't generate the image. ${error.message}`, 'error');
     } finally {
         stopTimer();
         loadingIndicator.classList.add('hidden');
         addBackButton();
-        // IMPORTANT: Always re-enable the generate button and restore its icon.
-        generateBtn.disabled = false;
-        generateBtn.innerHTML = originalGenerateBtnContent;
+        // REMOVED recaptcha.reset()
     }
 }
 
@@ -219,7 +187,6 @@ function updateUIForAuthState(user) {
         generationCounterEl.textContent = welcomeText;
         mobileGenerationCounterEl.textContent = welcomeText;
         authModal.setAttribute('aria-hidden', 'true');
-        musicPlayer.style.display = 'block';
         if (lastGeneratedImageUrl) {
             const blurredContainer = document.querySelector('.blurred-image-container');
             if (blurredContainer) {
@@ -270,13 +237,15 @@ function removeUploadedImage() {
     promptInput.placeholder = "An oil painting of a futuristic city skyline at dusk...";
 }
 
-async function generateImageWithRetry(prompt, imageData, token, aspectRatio, maxRetries = 3) {
+// UPDATED: Function no longer needs a token parameter
+async function generateImageWithRetry(prompt, imageData, aspectRatio, maxRetries = 3) {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
             const response = await fetch('/api/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt, imageData, recaptchaToken: token, aspectRatio: aspectRatio })
+                // UPDATED: Body no longer contains a token
+                body: JSON.stringify({ prompt, imageData, aspectRatio: aspectRatio })
             });
 
             if (!response.ok) {
@@ -334,10 +303,7 @@ function displayImage(imageUrl, prompt, shouldBlur = false) {
         const overlay = document.createElement('div');
         overlay.className = 'unlock-overlay';
         overlay.innerHTML = `<h3 class="text-xl font-semibold">Unlock Image</h3><p class="mt-2">Sign in to unlock this image and get unlimited generations.</p><button id="unlock-btn">Sign In to Unlock</button>`;
-        overlay.querySelector('#unlock-btn').onclick = () => { 
-            authModal.setAttribute('aria-hidden', 'false');
-            musicPlayer.style.display = 'none';
-        };
+        overlay.querySelector('#unlock-btn').onclick = () => { authModal.setAttribute('aria-hidden', 'false'); };
         imgContainer.appendChild(overlay);
     }
     imageGrid.appendChild(imgContainer);
@@ -360,7 +326,6 @@ function addBackButton() {
         messageBox.innerHTML = '';
         promptInput.value = '';
         removeUploadedImage();
-        musicPlayer.style.display = 'block';
     };
     messageBox.prepend(backButton);
 }
