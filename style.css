@@ -2,13 +2,19 @@
 body {
     font-family: 'Inter', sans-serif;
     background-color: #f7f7f7;
-    /* We remove the alignment here so the app container can be at the top */
     min-height: 100vh;
     color: #2d2d2d;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     cursor: none; /* Hide the default cursor */
 }
+
+/* --- HIDE THE RECAPTCHA BADGE --- */
+/* This is the new code that makes the badge invisible */
+.grecaptcha-badge { 
+    visibility: hidden !important;
+}
+
 
 /* --- REBUILT Custom Cursor --- */
 .cursor-dot,
