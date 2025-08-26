@@ -9,7 +9,9 @@ body {
     cursor: none;
 }
 
-/* REMOVED .grecaptcha-badge rule */
+.grecaptcha-badge { 
+    visibility: hidden !important;
+}
 
 /* --- Aspect Ratio Button Styles --- */
 .aspect-ratio-btn {
@@ -436,6 +438,14 @@ textarea::-webkit-scrollbar-thumb:hover {
 }
 #music-btn.playing .wave {
     display: block;
+}
+
+/* NEW: Style for prompt text clamping */
+.line-clamp-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
 }
 
 @media (max-width: 768px) {
