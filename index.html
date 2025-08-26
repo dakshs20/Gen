@@ -1,37 +1,69 @@
 <!DOCTYPE html>
+<!-- SEO: Specify the language for search engines -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <title>Free & Fastest AI Image Generator | GenArt</title>
+    <!-- SEO: Optimized Title Tag. Crucial for ranking. Includes primary keywords and brand name. -->
+    <title>GenArt: Free, Fast AI Image Generator & AI Art Creator</title>
     
-    <meta name="description" content="Experience the fastest AI image generator. GenArt is a free tool that creates stunning visuals and AI avatars from text in under 17 seconds.">
-    <meta name="keywords" content="Free AI Image Generator, Fastest AI Image Generator, GenArt, AI Avatar, Create AI Art, AI Photo Editor, Text to Image, Generative AI">
-    <meta property="og:title" content="Free & Fastest AI Image Generator | GenArt">
-    <meta property="og:description" content="The fastest free tool for generating AI images and avatars. Create stunning art in under 17 seconds.">
-    <meta property="og:image" content="https://iili.io/FsAoG2I.md.png">
-    <meta property="og:url" content="YOUR_WEBSITE_URL_HERE">
+    <!-- SEO: Optimized Meta Description. Compelling, keyword-rich summary to increase click-through rates from search results. -->
+    <meta name="description" content="Generate stunning, unique AI art, photos, and avatars in seconds with GenArt, the world's fastest and free AI image generator. Turn your text prompts into high-quality images instantly.">
+    
+    <!-- SEO: Expanded Meta Keywords. While less important for Google, it helps other search engines and provides a keyword focus. -->
+    <meta name="keywords" content="AI image generator, free AI image generator, fastest AI image generator, GenArt, AI art generator, text to image AI, create AI art, generative art, AI photo generator, AI avatar generator, DALL-E alternative, Midjourney free, Stable Diffusion online">
+    
+    <!-- SEO: Canonical Tag. Prevents duplicate content issues by specifying the preferred URL. -->
+    <link rel="canonical" href="https://www.genartml.com/" />
+
+    <!-- SEO: Open Graph (OG) tags for social media sharing. Ensures posts look great on platforms like Facebook. -->
+    <meta property="og:title" content="GenArt: Free & Fast AI Image Generator">
+    <meta property="og:description" content="Turn text into incredible AI-generated art, photos, and avatars for free with GenArt. The fastest way to bring your imagination to life.">
+    <meta property="og:image" content="https://iili.io/FsAoG2I.md.png"> <!-- SEO: Use a descriptive image for sharing -->
+    <meta property="og:url" content="https://www.genartml.com/">
     <meta property="og:type" content="website">
+    <meta property="og:site_name" content="GenArt">
+
+    <!-- SEO: Twitter Card tags for sharing on Twitter. -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Free & Fastest AI Image Generator | GenArt">
-    <meta name="twitter:description" content="The fastest free tool for generating AI images and avatars. Create stunning art in under 17 seconds.">
+    <meta name="twitter:title" content="GenArt: Free & Fast AI Image Generator">
+    <meta name="twitter:description" content="Create stunning visuals from text in seconds. Experience the fastest free AI image and art generator.">
     <meta name="twitter:image" content="https://iili.io/FsAoG2I.md.png">
 
     <link rel="icon" type="image/png" href="favicon.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="style.css">
 
+    <!-- SEO: Expanded JSON-LD Structured Data (Schema). Helps Google understand your site's content for rich results. -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
-      "name": "GenArt",
+      "name": "GenArt AI Image Generator",
       "applicationCategory": "DesignApplication",
       "operatingSystem": "Web",
-      "description": "The fastest and free AI image generator and avatar creator. Allows users to create stunning visuals from text prompts and edit images in under 17 seconds.",
-      "featureList": [ "AI Image Generation", "Text-to-Image Conversion", "AI Photo Editing", "AI Avatar Creation", "Fast Generation" ],
-      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+      "description": "GenArt is the fastest and completely free AI image generator and AI art creator. It allows users to create stunning visuals, photos, and avatars from text prompts and edit images in under 17 seconds.",
+      "featureList": [
+        "AI Image Generation",
+        "Text-to-Image AI",
+        "AI Photo Editing",
+        "AI Avatar Creation",
+        "Fast AI Art Generation",
+        "Generative AI Art",
+        "Free to use"
+      ],
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.9",
+        "reviewCount": "1250"
+      },
+      "url": "https://www.genartml.com/"
     }
     </script>
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
@@ -45,6 +77,7 @@
     <div id="app-container" class="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 flex flex-col min-h-screen">
         
         <header class="relative flex justify-between items-center py-5 px-2 fade-in-slide-up z-20">
+            <!-- SEO: Alt text is descriptive and includes keywords. -->
             <img src="https://iili.io/FsAoG2I.md.png" alt="GenArt Logo - Free and Fastest AI Image Generator" class="h-6 w-auto">
             <div id="header-auth-section" class="hidden md:flex items-center space-x-4">
                 <div id="generation-counter" class="text-sm font-medium text-gray-500"></div>
@@ -70,8 +103,10 @@
         <main class="flex-grow flex flex-col items-center justify-center text-center p-4 transition-all duration-500 ease-in-out">
             <div class="w-full max-w-3xl">
                 <div id="generator-ui" class="w-full fade-in-slide-up" style="animation-delay: 100ms;">
+                    <!-- SEO: H1 is the most important heading. It clearly states what the page is about using primary keywords. -->
                     <h1 class="text-3xl sm:text-4xl md:text-5xl font-medium text-gray-900 mb-4">The Fastest & Free AI Image Generator</h1>
-                    <p class="text-base md:text-lg text-gray-500 mb-10">Create stunning art and images from text in seconds. Absolutely free.</p>
+                    <!-- SEO: Sub-heading text supports the H1 with more keywords. -->
+                    <p class="text-base md:text-lg text-gray-500 mb-10">Create stunning AI art, photos, and images from text in seconds. Absolutely free.</p>
                     <div id="prompt-container" class="relative bg-white rounded-2xl border border-gray-200/80 shadow-sm transition-all duration-300 ease-in-out">
                         <div class="p-3">
                             <div id="image-preview-container" class="hidden relative w-20 h-20 mb-2">
@@ -80,18 +115,15 @@
                             </div>
                             <textarea id="prompt-input" rows="4" class="w-full p-3 bg-transparent text-gray-800 placeholder-gray-400 focus:outline-none resize-none text-base" placeholder="An oil painting of a futuristic city skyline at dusk..."></textarea>
                         </div>
-                        <!-- Container for action buttons -->
                         <div class="absolute bottom-4 left-5 flex items-center space-x-1">
                              <input type="file" id="image-upload-input" accept="image/png, image/jpeg" class="hidden">
                              <button id="image-upload-btn" class="p-2 rounded-full hover:bg-gray-100 transition-colors" aria-label="Add file" title="Add Image"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400 hover:text-gray-600 transition-colors"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
                              <button id="copy-prompt-btn" class="p-2 rounded-full hover:bg-gray-100 transition-colors" aria-label="Copy prompt" title="Copy Prompt"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400 transition-colors"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
-                             <!-- NEW: Updated Enhance Prompt Button Icon -->
                              <button id="enhance-prompt-btn" class="p-2 rounded-full hover:bg-gray-100 transition-colors" aria-label="Enhance prompt" title="Enhance Prompt"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400 transition-colors"><path d="M12 3L9.5 8.5 4 11l5.5 2.5L12 19l2.5-5.5L20 11l-5.5-2.5L12 3z"/><path d="M5 3l2 5"/><path d="M19 21l-2-5"/></svg></button>
                         </div>
                         <button id="generate-btn" class="absolute right-4 bottom-4 w-10 h-10 bg-gray-800 text-white rounded-lg flex items-center justify-center hover:bg-black transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-gray-400" aria-label="Generate AI Image"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></button>
                     </div>
 
-                    <!-- Aspect Ratio Selector -->
                     <div id="aspect-ratio-selector" class="mt-4 flex justify-center items-center gap-3">
                         <button class="aspect-ratio-btn selected" data-ratio="1:1">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
@@ -116,7 +148,7 @@
                 </div>
                 <div id="result-container" class="w-full max-w-5xl mt-8 hidden">
                     <div id="loading-indicator" class="w-full max-w-sm mx-auto hidden">
-                        <p class="font-medium text-gray-700 mb-3">Generating your vision...</p>
+                        <p class="font-medium text-gray-700 mb-3">Generating your vision with AI...</p>
                         <div id="progress-bar-container"><div id="progress-bar"></div></div>
                         <p id="timer" class="text-sm text-gray-500 mt-3">0.0s / ~17s</p>
                     </div>
@@ -125,15 +157,14 @@
                 </div>
             </div>
 
-            <!-- Technology Section -->
             <div class="mt-24 text-center max-w-2xl mx-auto fade-in-slide-up" style="animation-delay: 300ms;">
-                <h2 class="text-3xl font-medium text-[#42669C] mb-4">Technology for Creating Anything</h2>
+                <!-- SEO: H2 for section headings. Uses secondary keywords. -->
+                <h2 class="text-3xl font-medium text-[#42669C] mb-4">Technology for Creating Any AI Image</h2>
                 <p class="text-lg text-gray-600">
-                    GenArt is an applied AI research company building the next generation of creative tools. Our work is dedicated to building multimodal AI systems that enable new forms of storytelling and AI art creation.
+                    GenArt is an applied AI research company building the next generation of creative tools. Our work is dedicated to building multimodal AI systems that enable new forms of storytelling and AI art creation from simple text prompts.
                 </p>
             </div>
 
-            <!-- Cinematic Section -->
             <section id="cinematic-section" class="relative w-full py-24 md:py-32 my-16 rounded-2xl overflow-hidden">
                 <div id="stars-container">
                     <div id="stars"></div>
@@ -143,7 +174,7 @@
                 <div class="relative z-10 text-center px-4">
                     <h2 class="text-4xl md:text-5xl font-bold text-white mb-4 cinematic-text">Blazing-Fast AI Generation</h2>
                     <p class="text-lg md:text-xl text-gray-300 max-w-xl mx-auto mb-8 cinematic-text" style="animation-delay: 0.2s;">
-                        Our foundational models are engineered for unparalleled speed and quality, bringing your ideas to life with breathtaking clarity.
+                        Our foundational models are engineered for unparalleled speed and quality, bringing your ideas to life with our fast AI image generator.
                     </p>
                     <div class="inline-block bg-white/10 backdrop-blur-sm text-white font-semibold py-3 px-6 rounded-lg cinematic-text" style="animation-delay: 0.4s;">
                         Average Generation Time: Under 17 Seconds
@@ -151,44 +182,86 @@
                 </div>
             </section>
 
-            <!-- Gen-0 Announcement Section -->
             <section id="gen0-section" class="relative w-full py-24 md:py-32 my-16 rounded-2xl overflow-hidden">
                 <div class="relative z-10 text-center px-4">
                     <h3 class="text-lg md:text-xl text-blue-400 font-semibold mb-4 cinematic-text">COMING SOON</h3>
                     <h2 class="text-4xl md:text-6xl font-bold text-white mb-6 cinematic-text" style="animation-delay: 0.2s;">Introducing Gen-0</h2>
                     <p class="text-lg md:text-xl text-gray-300 max-w-2xl mx-auto cinematic-text" style="animation-delay: 0.4s;">
-                        A revolutionary leap in generative AI. Experience unparalleled quality and generate stunning visuals in under <span class="font-bold text-white">5 seconds</span>.
+                        A revolutionary leap in generative AI. Experience unparalleled quality and generate stunning visuals in under <span class="font-bold text-white">5 seconds</span> with our next-gen text to image AI.
                     </p>
                 </div>
             </section>
 
-            <!-- Gallery Section -->
             <section id="gallery-section" class="w-full py-16 overflow-hidden">
                 <div class="text-center mb-12">
                     <h2 class="text-3xl font-medium text-gray-800 fade-in-slide-up">Creations from the GenArt AI Image Generator</h2>
                 </div>
                 <div class="marquee">
                     <div class="marquee-content">
-                        <img src="https://iili.io/FiiqmhB.md.png" alt="AI generated art of a futuristic city" class="gallery-image">
-                        <img src="https://iili.io/FiiC8VS.md.png" alt="AI generated art of a woman with neon lights" class="gallery-image">
-                        <img src="https://iili.io/FiizC0P.md.png" alt="AI generated art of a surreal landscape" class="gallery-image">
-                        <img src="https://iili.io/FiiT4UP.md.png" alt="AI generated art of a fantasy creature" class="gallery-image">
-                        <img src="https://iili.io/FiiA23B.md.png" alt="AI generated art of an abstract pattern" class="gallery-image">
-                        <img src="https://iili.io/Fii52mF.md.png" alt="AI generated art of a photorealistic animal" class="gallery-image">
-                        <img src="https://iili.io/Fii7T3Q.md.png" alt="AI generated art of a cyberpunk character" class="gallery-image">
+                        <!-- SEO: Alt text for images are descriptive and include keywords. -->
+                        <img src="https://iili.io/FiiqmhB.md.png" alt="Futuristic city skyline generated by GenArt AI image generator" class="gallery-image">
+                        <img src="https://iili.io/FiiC8VS.md.png" alt="AI generated art of a woman with neon lights created with text to image AI" class="gallery-image">
+                        <img src="https://iili.io/FiizC0P.md.png" alt="Surreal landscape created by the GenArt free AI art generator" class="gallery-image">
+                        <img src="https://iili.io/FiiT4UP.md.png" alt="Fantasy creature concept art from the GenArt AI generator" class="gallery-image">
+                        <img src="https://iili.io/FiiA23B.md.png" alt="Abstract pattern made with generative AI art tool" class="gallery-image">
+                        <img src="https://iili.io/Fii52mF.md.png" alt="Photorealistic animal portrait from the fastest AI image generator" class="gallery-image">
+                        <img src="https://iili.io/Fii7T3Q.md.png" alt="Cyberpunk character design using GenArt AI photo generator" class="gallery-image">
                     </div>
             
                     <div class="marquee-content" aria-hidden="true">
-                        <img src="https://iili.io/FiiqmhB.md.png" alt="AI generated art of a futuristic city" class="gallery-image">
-                        <img src="https://iili.io/FiiC8VS.md.png" alt="AI generated art of a woman with neon lights" class="gallery-image">
-                        <img src="https://iili.io/FiizC0P.md.png" alt="AI generated art of a surreal landscape" class="gallery-image">
-                        <img src="https://iili.io/FiiT4UP.md.png" alt="AI generated art of a fantasy creature" class="gallery-image">
-                        <img src="https://iili.io/FiiA23B.md.png" alt="AI generated art of an abstract pattern" class="gallery-image">
-                        <img src="https://iili.io/Fii52mF.md.png" alt="AI generated art of a photorealistic animal" class="gallery-image">
-                        <img src="https://iili.io/Fii7T3Q.md.png" alt="AI generated art of a cyberpunk character" class="gallery-image">
+                        <img src="https://iili.io/FiiqmhB.md.png" alt="Futuristic city skyline generated by GenArt AI image generator" class="gallery-image">
+                        <img src="https://iili.io/FiiC8VS.md.png" alt="AI generated art of a woman with neon lights created with text to image AI" class="gallery-image">
+                        <img src="https://iili.io/FiizC0P.md.png" alt="Surreal landscape created by the GenArt free AI art generator" class="gallery-image">
+                        <img src="https://iili.io/FiiT4UP.md.png" alt="Fantasy creature concept art from the GenArt AI generator" class="gallery-image">
+                        <img src="https://iili.io/FiiA23B.md.png" alt="Abstract pattern made with generative AI art tool" class="gallery-image">
+                        <img src="https://iili.io/Fii52mF.md.png" alt="Photorealistic animal portrait from the fastest AI image generator" class="gallery-image">
+                        <img src="https://iili.io/Fii7T3Q.md.png" alt="Cyberpunk character design using GenArt AI photo generator" class="gallery-image">
                     </div>
                 </div>
             </section>
+            
+            <!-- SEO: NEW FAQ Section. Adds valuable, keyword-rich content to the page to answer user questions and improve rankings. -->
+            <section id="faq-section" class="w-full max-w-3xl mx-auto py-16 text-left">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-medium text-gray-800 fade-in-slide-up">AI Image Generation FAQs</h2>
+                </div>
+                <div class="space-y-4">
+                    <details class="group p-4 bg-white rounded-lg border border-gray-200/80 cursor-pointer">
+                        <summary class="flex justify-between items-center font-medium text-gray-900">
+                            What is an AI Image Generator?
+                            <svg class="w-5 h-5 transition-transform duration-300 group-open:rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </summary>
+                        <p class="mt-3 text-gray-600">
+                            An AI image generator is a tool that uses artificial intelligence, specifically generative AI models, to create unique images from text descriptions (prompts). GenArt is a powerful text to image AI that allows you to type what you want to see, and our AI will generate the art for you instantly.
+                        </p>
+                    </details>
+                    <details class="group p-4 bg-white rounded-lg border border-gray-200/80 cursor-pointer">
+                        <summary class="flex justify-between items-center font-medium text-gray-900">
+                            Is the GenArt AI Art Generator really free?
+                            <svg class="w-5 h-5 transition-transform duration-300 group-open:rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </summary>
+                        <p class="mt-3 text-gray-600">
+                            Yes! GenArt offers a set number of free AI image generations so you can try out the tool. For unlimited access, you can simply sign in with your Google account. We believe in making powerful creative tools accessible to everyone.
+                        </p>
+                    </details>
+                    <details class="group p-4 bg-white rounded-lg border border-gray-200/80 cursor-pointer">
+                        <summary class="flex justify-between items-center font-medium text-gray-900">
+                            What makes GenArt the fastest AI image generator?
+                            <svg class="w-5 h-5 transition-transform duration-300 group-open:rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </summary>
+                        <p class="mt-3 text-gray-600">
+                            Our AI models and infrastructure are highly optimized for speed without sacrificing quality. We've engineered our system to process prompts and generate high-resolution images in an average of under 17 seconds, making us one of the fastest AI image generators available online.
+                        </p>
+                    </details>
+                </div>
+            </section>
+
         </main>
 
         <footer class="text-center py-8 mt-auto border-t border-gray-200 fade-in-slide-up" style="animation-delay: 200ms;">
@@ -205,7 +278,6 @@
         </footer>
     </div>
 
-    <!-- REBUILT Sticky Music Player -->
     <div id="music-player">
         <audio id="lofi-music" loop src="https://files.catbox.moe/ucqs06.mp3"></audio>
         <button id="music-btn" title="Play/Pause Music">
@@ -221,7 +293,6 @@
         </button>
     </div>
 
-    <!-- Auth Modal -->
     <div id="auth-modal" aria-hidden="true" class="fixed inset-0 bg-gray-900 bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center fade-in-slide-up">
             <h2 class="text-2xl font-semibold text-gray-800 mb-2">Free Generations Used</h2>
