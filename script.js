@@ -51,12 +51,21 @@ const lofiMusic = document.getElementById('lofi-music');
 const cursorDot = document.querySelector('.cursor-dot');
 const cursorOutline = document.querySelector('.cursor-outline');
 const aspectRatioBtns = document.querySelectorAll('.aspect-ratio-btn');
+const copyPromptBtn = document.getElementById('copy-prompt-btn');
+const enhancePromptBtn = document.getElementById('enhance-prompt-btn');
+
 
 let timerInterval;
 const FREE_GENERATION_LIMIT = 3;
 let uploadedImageData = null;
 let lastGeneratedImageUrl = null;
 let selectedAspectRatio = '1:1'; // Default aspect ratio
+
+// --- reCAPTCHA Callback Function ---
+window.onRecaptchaSuccess = function(token) {
+    console.log("Invisible reCAPTCHA check passed. Proceeding with image generation.");
+    generateImage(token);
+};
 
 // --- Main App Logic ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -80,7 +89,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     
-    // UPDATED: Generate button now calls generateImage directly
     generateBtn.addEventListener('click', () => {
         const prompt = promptInput.value.trim();
         if (!prompt) {
@@ -93,8 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
             authModal.setAttribute('aria-hidden', 'false');
             return;
         }
-        // Directly call the image generation function
-        generateImage();
+        grecaptcha.execute();
     });
 
     promptInput.addEventListener('keydown', (e) => {
@@ -111,6 +118,9 @@ document.addEventListener('DOMContentLoaded', () => {
             selectedAspectRatio = btn.dataset.ratio;
         });
     });
+
+    copyPromptBtn.addEventListener('click', copyPrompt);
+    enhancePromptBtn.addEventListener('click', handleEnhancePrompt);
 
     imageUploadBtn.addEventListener('click', () => imageUploadInput.click());
     imageUploadInput.addEventListener('change', handleImageUpload);
@@ -147,8 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// UPDATED: Function no longer needs a token parameter
-async function generateImage() {
+async function generateImage(recaptchaToken) {
     const prompt = promptInput.value.trim();
     const shouldBlur = !auth.currentUser && getGenerationCount() === (FREE_GENERATION_LIMIT -1);
     
@@ -160,8 +169,7 @@ async function generateImage() {
     startTimer();
 
     try {
-        // UPDATED: Call generateImageWithRetry without a token
-        const imageUrl = await generateImageWithRetry(prompt, uploadedImageData, selectedAspectRatio);
+        const imageUrl = await generateImageWithRetry(prompt, uploadedImageData, recaptchaToken, selectedAspectRatio);
         if (shouldBlur) { lastGeneratedImageUrl = imageUrl; }
         displayImage(imageUrl, prompt, shouldBlur);
         incrementTotalGenerations();
@@ -173,9 +181,102 @@ async function generateImage() {
         stopTimer();
         loadingIndicator.classList.add('hidden');
         addBackButton();
-        // REMOVED recaptcha.reset()
+        grecaptcha.reset();
     }
 }
+
+function copyPrompt() {
+    const promptText = promptInput.value;
+    if (!promptText) {
+        showMessage('There is no prompt to copy.', 'info');
+        return;
+    }
+    const textArea = document.createElement('textarea');
+    textArea.value = promptText;
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.position = "fixed";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+        document.execCommand('copy');
+        showMessage('Prompt copied to clipboard!', 'info');
+        const originalIcon = copyPromptBtn.innerHTML;
+        copyPromptBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-500"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+        setTimeout(() => {
+            copyPromptBtn.innerHTML = originalIcon;
+        }, 2000);
+    } catch (err) {
+        console.error('Failed to copy text: ', err);
+        showMessage('Failed to copy prompt.', 'error');
+    }
+    document.body.removeChild(textArea);
+}
+
+async function handleEnhancePrompt() {
+    const promptText = promptInput.value.trim();
+    if (!promptText) {
+        showMessage('Please enter a prompt to enhance.', 'info');
+        return;
+    }
+
+    const originalIcon = enhancePromptBtn.innerHTML;
+    const spinner = `<svg class="animate-spin" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>`;
+    enhancePromptBtn.innerHTML = spinner;
+    enhancePromptBtn.disabled = true;
+
+    try {
+        const enhancedPrompt = await callApiToEnhance(promptText);
+        promptInput.value = enhancedPrompt;
+        // Auto-adjust textarea height after enhancing
+        promptInput.style.height = 'auto';
+        promptInput.style.height = (promptInput.scrollHeight) + 'px';
+    } catch (error) {
+        console.error('Failed to enhance prompt:', error);
+        showMessage('Sorry, the prompt could not be enhanced right now.', 'error');
+    } finally {
+        enhancePromptBtn.innerHTML = originalIcon;
+        enhancePromptBtn.disabled = false;
+    }
+}
+
+/**
+ * Calls a new backend endpoint `/api/enhance` to get an enhanced prompt.
+ * This follows the same pattern as image generation for better security and reliability.
+ * NOTE: You will need to create this endpoint on your server. It should accept a
+ * JSON body like { prompt: "user's prompt" } and return JSON like
+ * { text: "enhanced prompt" }.
+ */
+async function callApiToEnhance(prompt, maxRetries = 3) {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+            const response = await fetch('/api/enhance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt })
+            });
+
+            if (!response.ok) {
+                const errorResult = await response.json();
+                throw new Error(errorResult.error || `API Error: ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            if (result.text) {
+                return result.text;
+            } else {
+                throw new Error("Unexpected response structure from enhancement API.");
+            }
+        } catch (error) {
+            console.error(`Enhancement attempt ${attempt + 1} failed:`, error);
+            if (attempt >= maxRetries - 1) throw error;
+            await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+        }
+    }
+}
+
 
 function handleAuthAction() { if (auth.currentUser) signOut(auth); else signInWithGoogle(); }
 function signInWithGoogle() { signInWithPopup(auth, provider).then(result => updateUIForAuthState(result.user)).catch(error => console.error("Authentication Error:", error)); }
@@ -237,15 +338,13 @@ function removeUploadedImage() {
     promptInput.placeholder = "An oil painting of a futuristic city skyline at dusk...";
 }
 
-// UPDATED: Function no longer needs a token parameter
-async function generateImageWithRetry(prompt, imageData, aspectRatio, maxRetries = 3) {
+async function generateImageWithRetry(prompt, imageData, token, aspectRatio, maxRetries = 3) {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
             const response = await fetch('/api/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                // UPDATED: Body no longer contains a token
-                body: JSON.stringify({ prompt, imageData, aspectRatio: aspectRatio })
+                body: JSON.stringify({ prompt, imageData, recaptchaToken: token, aspectRatio: aspectRatio })
             });
 
             if (!response.ok) {
@@ -314,9 +413,17 @@ function showMessage(text, type = 'info') {
     messageEl.textContent = text;
     messageBox.innerHTML = '';
     messageBox.appendChild(messageEl);
+    setTimeout(() => {
+        if(messageBox.contains(messageEl)) {
+            messageBox.removeChild(messageEl);
+        }
+    }, 4000);
 }
 function addBackButton() {
+    if (document.getElementById('back-to-generator-btn')) return;
+
     const backButton = document.createElement('button');
+    backButton.id = 'back-to-generator-btn';
     backButton.textContent = '← Create another';
     backButton.className = 'mt-4 text-blue-600 font-semibold hover:text-blue-800 transition-colors';
     backButton.onclick = () => {
