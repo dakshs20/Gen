@@ -53,6 +53,10 @@ const cursorOutline = document.querySelector('.cursor-outline');
 const aspectRatioBtns = document.querySelectorAll('.aspect-ratio-btn');
 const copyPromptBtn = document.getElementById('copy-prompt-btn');
 const enhancePromptBtn = document.getElementById('enhance-prompt-btn');
+// --- NEW: References for regeneration UI ---
+const postGenerationControls = document.getElementById('post-generation-controls');
+const regeneratePromptInput = document.getElementById('regenerate-prompt-input');
+const regenerateBtn = document.getElementById('regenerate-btn');
 
 
 let timerInterval;
@@ -60,6 +64,9 @@ const FREE_GENERATION_LIMIT = 3;
 let uploadedImageData = null;
 let lastGeneratedImageUrl = null;
 let selectedAspectRatio = '1:1'; // Default aspect ratio
+// --- NEW: State variables for regeneration flow ---
+let isRegenerating = false;
+let lastPrompt = '';
 
 // --- reCAPTCHA Callback Function ---
 window.onRecaptchaSuccess = function(token) {
@@ -101,6 +108,23 @@ document.addEventListener('DOMContentLoaded', () => {
             authModal.setAttribute('aria-hidden', 'false');
             return;
         }
+        isRegenerating = false; // Set state for initial generation
+        grecaptcha.execute();
+    });
+
+    // --- NEW: Event listener for the regenerate button ---
+    regenerateBtn.addEventListener('click', () => {
+        const prompt = regeneratePromptInput.value.trim();
+        if (!prompt) {
+            showMessage('Please enter a prompt to regenerate.', 'error');
+            return;
+        }
+        const count = getGenerationCount();
+        if (!auth.currentUser && count >= FREE_GENERATION_LIMIT) {
+            authModal.setAttribute('aria-hidden', 'false');
+            return;
+        }
+        isRegenerating = true; // Set state for regeneration
         grecaptcha.execute();
     });
 
@@ -157,15 +181,23 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+// --- MODIFIED: generateImage handles both initial and regeneration flows ---
 async function generateImage(recaptchaToken) {
-    const prompt = promptInput.value.trim();
+    const prompt = isRegenerating ? regeneratePromptInput.value.trim() : promptInput.value.trim();
+    lastPrompt = prompt; // Store the last used prompt
     const shouldBlur = !auth.currentUser && getGenerationCount() === (FREE_GENERATION_LIMIT -1);
     
+    // UI updates for generation start
     imageGrid.innerHTML = '';
     messageBox.innerHTML = '';
-    resultContainer.classList.remove('hidden');
-    loadingIndicator.classList.remove('hidden');
-    generatorUI.classList.add('hidden');
+    if (isRegenerating) {
+        loadingIndicator.classList.remove('hidden');
+        postGenerationControls.classList.add('hidden');
+    } else {
+        resultContainer.classList.remove('hidden');
+        loadingIndicator.classList.remove('hidden');
+        generatorUI.classList.add('hidden');
+    }
     startTimer();
 
     try {
@@ -180,8 +212,12 @@ async function generateImage(recaptchaToken) {
     } finally {
         stopTimer();
         loadingIndicator.classList.add('hidden');
-        addBackButton();
+        // Show post-generation controls with the used prompt
+        regeneratePromptInput.value = lastPrompt;
+        postGenerationControls.classList.remove('hidden');
+        addNavigationButtons(); // Changed from addBackButton
         grecaptcha.reset();
+        isRegenerating = false; // Reset flag after completion
     }
 }
 
@@ -375,15 +411,22 @@ async function incrementTotalGenerations() {
     const counterRef = doc(db, "stats", "imageGenerations");
     try { await setDoc(counterRef, { count: increment(1) }, { merge: true }); } catch (error) { console.error("Error incrementing generation count:", error); }
 }
+
 function displayImage(imageUrl, prompt, shouldBlur = false) {
     const imgContainer = document.createElement('div');
     imgContainer.className = 'bg-white rounded-xl shadow-lg overflow-hidden relative group fade-in-slide-up mx-auto max-w-2xl border border-gray-200/80';
     if (shouldBlur) { imgContainer.classList.add('blurred-image-container'); }
+    
+    const promptText = document.createElement('p');
+    promptText.textContent = prompt;
+    promptText.className = 'p-4 text-sm text-left text-gray-700 bg-gray-50 border-b border-gray-200 line-clamp-3';
+    
     const img = document.createElement('img');
     img.src = imageUrl;
     img.alt = prompt;
     img.className = 'w-full h-auto object-contain';
     if (shouldBlur) { img.classList.add('blurred-image'); }
+    
     const downloadButton = document.createElement('button');
     downloadButton.className = 'absolute top-4 right-4 bg-black/50 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-white';
     downloadButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
@@ -396,7 +439,10 @@ function displayImage(imageUrl, prompt, shouldBlur = false) {
         a.click();
         document.body.removeChild(a);
     };
+
+    imgContainer.appendChild(promptText);
     imgContainer.appendChild(img);
+
     if (!shouldBlur) { imgContainer.appendChild(downloadButton); }
     if (shouldBlur) {
         const overlay = document.createElement('div');
@@ -407,6 +453,7 @@ function displayImage(imageUrl, prompt, shouldBlur = false) {
     }
     imageGrid.appendChild(imgContainer);
 }
+
 function showMessage(text, type = 'info') {
     const messageEl = document.createElement('div');
     messageEl.className = `p-4 rounded-lg ${type === 'error' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'} fade-in-slide-up`;
@@ -419,23 +466,32 @@ function showMessage(text, type = 'info') {
         }
     }, 4000);
 }
-function addBackButton() {
-    if (document.getElementById('back-to-generator-btn')) return;
 
-    const backButton = document.createElement('button');
-    backButton.id = 'back-to-generator-btn';
-    backButton.textContent = '← Create another';
-    backButton.className = 'mt-4 text-blue-600 font-semibold hover:text-blue-800 transition-colors';
-    backButton.onclick = () => {
+// --- MODIFIED: Renamed function and updated logic ---
+function addNavigationButtons() {
+    // Clear any existing buttons first
+    const existingButton = document.getElementById('start-new-btn');
+    if (existingButton) {
+        existingButton.remove();
+    }
+
+    const startNewButton = document.createElement('button');
+    startNewButton.id = 'start-new-btn';
+    startNewButton.textContent = '← Start New';
+    startNewButton.className = 'text-sm sm:text-base mt-4 text-blue-600 font-semibold hover:text-blue-800 transition-colors';
+    startNewButton.onclick = () => {
         generatorUI.classList.remove('hidden');
         resultContainer.classList.add('hidden');
         imageGrid.innerHTML = '';
         messageBox.innerHTML = '';
+        postGenerationControls.classList.add('hidden');
         promptInput.value = '';
+        regeneratePromptInput.value = '';
         removeUploadedImage();
     };
-    messageBox.prepend(backButton);
+    messageBox.prepend(startNewButton);
 }
+
 function startTimer() {
     let startTime = Date.now();
     const maxTime = 17 * 1000;
