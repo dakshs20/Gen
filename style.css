@@ -51,20 +51,19 @@ body {
     border-radius: 50%;
     opacity: 1;
     z-index: 9999;
+    transform: translate(-50%, -50%);
 }
 
 .cursor-dot {
     width: 8px;
     height: 8px;
     background-color: #42669C;
-    transform: translate(-50%, -50%);
 }
 
 .cursor-outline {
     width: 40px;
     height: 40px;
     background-color: rgba(66, 102, 156, 0.2);
-    transform: translate(-50%, -50%);
     transition: transform 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
 
@@ -447,6 +446,29 @@ textarea::-webkit-scrollbar-thumb:hover {
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
 }
+
+/* NEW: AI Prompt Suggestion Buttons */
+.prompt-suggestion-btn {
+    padding: 6px 12px;
+    background-color: #eef2ff; /* Light indigo background */
+    color: #4338ca; /* Indigo text */
+    border: 1px solid #c7d2fe; /* Indigo border */
+    border-radius: 9999px; /* Pill shape */
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.prompt-suggestion-btn:hover {
+    background-color: #e0e7ff;
+    border-color: #a5b4fc;
+    transform: translateY(-1px);
+}
+
 
 @media (max-width: 768px) {
     body {
