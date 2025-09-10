@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- 
-  This sitemap tells search engines about the pages on your site.
-  You should submit this file to Google Search Console.
--->
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="[http://www.sitemaps.org/schemas/sitemap/0.9](http://www.sitemaps.org/schemas/sitemap/0.9)">
   <url>
-    <loc>https://www.genartml.com/</loc>
-    <lastmod>2024-05-21</lastmod> <!-- SEO: Change this to the date you last updated the page -->
-    <changefreq>monthly</changefreq>
+    <loc>[https://www.genartml.com/](https://www.genartml.com/)</loc>
+    <lastmod>2025-09-10</lastmod>
     <priority>1.00</priority>
+  </url>
+  <url>
+    <loc>[https://www.genartml.com/pricing](https://www.genartml.com/pricing)</loc>
+    <lastmod>2025-09-10</lastmod>
+    <priority>0.80</priority>
   </url>
 </urlset>
