@@ -1,4 +1,6 @@
+# Allow all user agents to crawl the site
 User-agent: *
-Allow: /
+Disallow:
 
-Sitemap: https://genart.space/sitemap.xml
+# Point to the sitemap for easy discovery of all pages
+Sitemap: [https://www.genartml.com/sitemap.xml](https://www.genartml.com/sitemap.xml)
