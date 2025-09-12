@@ -201,8 +201,8 @@ function handleImageGenerationRequest(isRegen) {
         // Then, show the persistent error message in the main view's message box.
         setTimeout(() => {
             const messageContent = `You're out of credits. <a href="pricing.html" class="font-bold underline hover:text-red-800">Buy more</a> to continue creating.`;
-            showMessage(messageContent, 'error', true);
-        }, 100); // Timeout allows the DOM to update.
+            showMessage(messageContent, 'error', true); // The 'true' makes the message persistent
+        }, 100); // Timeout allows the DOM to update before showing the message.
         return;
     }
 
@@ -486,3 +486,4 @@ async function fetchAiSuggestions(promptText) {
         promptSuggestionsContainer.classList.add('hidden');
     }
 }
+
