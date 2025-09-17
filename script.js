@@ -30,13 +30,6 @@ let isRegenerating = false;
 let lastPrompt = '';
 
 
-// --- reCAPTCHA Callback ---
-window.onRecaptchaSuccess = function(token) {
-    console.log("Invisible reCAPTCHA check passed. Proceeding with image generation.");
-    generateImage(token);
-};
-
-
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
     initializeUniversalScripts();
@@ -162,7 +155,7 @@ function initializeGeneratorPage() {
                 return;
             }
             isRegenerating = false;
-            grecaptcha.execute();
+            generateImage();
         });
     }
 
@@ -181,7 +174,7 @@ function initializeGeneratorPage() {
                 return;
             }
             isRegenerating = true;
-            grecaptcha.execute();
+            generateImage();
         });
     }
 
@@ -323,7 +316,7 @@ async function handleEnhancePrompt() {
     }
 }
 
-async function generateImage(recaptchaToken) {
+async function generateImage() {
     const prompt = isRegenerating 
         ? document.getElementById('regenerate-prompt-input').value.trim() 
         : document.getElementById('prompt-input').value.trim();
@@ -352,7 +345,7 @@ async function generateImage(recaptchaToken) {
     startTimer();
 
     try {
-        const imageUrl = await generateImageWithRetry(prompt, uploadedImageData, recaptchaToken, selectedAspectRatio);
+        const imageUrl = await generateImageWithRetry(prompt, uploadedImageData, selectedAspectRatio);
         if (shouldBlur) { lastGeneratedImageUrl = imageUrl; }
         displayImage(imageUrl, prompt, shouldBlur);
         incrementTotalGenerations();
@@ -366,18 +359,17 @@ async function generateImage(recaptchaToken) {
         document.getElementById('regenerate-prompt-input').value = lastPrompt;
         postGenerationControls.classList.remove('hidden');
         addNavigationButtons();
-        grecaptcha.reset();
         isRegenerating = false;
     }
 }
 
-async function generateImageWithRetry(prompt, imageData, token, aspectRatio, maxRetries = 3) {
+async function generateImageWithRetry(prompt, imageData, aspectRatio, maxRetries = 3) {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
             const response = await fetch('/api/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt, imageData, recaptchaToken: token, aspectRatio: aspectRatio })
+                body: JSON.stringify({ prompt, imageData, aspectRatio: aspectRatio })
             });
             if (!response.ok) {
                 const errorResult = await response.json();
