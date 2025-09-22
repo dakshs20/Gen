@@ -1,7 +1,0 @@
-# Allow all user agents (search engine crawlers) to crawl the entire site.
-User-agent: *
-Disallow:
-
-# Specify the location of the sitemap file.
-# Replace "https://www.genartml.com" with your actual domain if it's different.
-Sitemap: https://www.genartml.com/sitemap.xml
