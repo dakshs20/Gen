@@ -1,0 +1,86 @@
+/* --- Base Styles --- */
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+/* --- NEW: Hero and Stats Section --- */
+#hero-section h1 {
+    opacity: 0;
+    transform: translateY(20px);
+}
+.stat-card {
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+/* --- Masonry Gallery Layout (Desktop First) --- */
+#masonry-gallery {
+    display: flex;
+    gap: 1rem; /* 16px */
+}
+
+.masonry-column {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    gap: 1rem; /* 16px */
+}
+
+.masonry-item {
+    overflow: hidden;
+    border-radius: 0.75rem; /* rounded-xl */
+    background-color: #e2e8f0; /* Placeholder color */
+    min-height: 150px;
+    animation: shimmer 2s infinite linear;
+    background-image: linear-gradient(to right, #e2e8f0 0%, #f1f5f9 20%, #e2e8f0 40%, #e2e8f0 100%);
+    background-repeat: no-repeat;
+    background-size: 1000px 100%; 
+}
+
+@keyframes shimmer {
+    0% { background-position: -500px 0; }
+    100% { background-position: 500px 0; }
+}
+
+.masonry-item img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 0.75rem; /* rounded-xl */
+    transition: opacity 0.5s ease-in-out;
+}
+
+/* --- Prompt Bar & UI --- */
+#prompt-input {
+    max-height: 150px; /* Cap the max height */
+}
+
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+.animate-shake {
+    animation: shake 0.82s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+/* --- Mobile Responsiveness --- */
+@media (max-width: 767px) {
+    #masonry-gallery {
+        display: block;
+    }
+    
+    .masonry-column {
+        display: block;
+    }
+
+    .masonry-column:not(:first-child) {
+        display: none;
+    }
+
+    .masonry-item {
+        margin-bottom: 1rem;
+    }
+}
+
