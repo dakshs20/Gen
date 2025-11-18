@@ -3,176 +3,1210 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GenArt: AI Image Generator</title>
-    <link rel="icon" type="image/png" href="favicon.png">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="style.css">
-    <!-- GSAP for animations -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-</head>
-<body class="bg-white overflow-hidden">
-
-    <!-- Main App Container -->
-    <div class="h-screen w-screen flex flex-col">
-        <!-- Header -->
-        <header class="absolute top-0 left-0 right-0 z-30 p-4">
-            <div class="max-w-7xl mx-auto flex justify-between items-center">
-                <a href="index.html">
-                    <img src="https://iili.io/FsAoG2I.md.png" alt="GenArt Logo" class="h-6 w-auto">
-                </a>
-                <div id="header-nav" class="flex items-center space-x-4 bg-white/70 backdrop-blur-md border border-gray-200/80 shadow-sm rounded-full px-4 py-1.5">
-                    <!-- Auth state content injected by script.js -->
-                </div>
-            </div>
-        </header>
-        
-        <!-- Header Blur Overlay -->
-        <div id="header-blur-overlay" class="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-white via-white/80 to-transparent z-20 transition-opacity duration-300 opacity-0 pointer-events-none"></div>
-
-        <!-- Main Content Scroller -->
-        <div id="gallery-container" class="flex-grow overflow-y-auto pt-24 pb-40">
-            
-            <!-- NEW: Hero Section -->
-            <section id="hero-section" class="text-center py-16 md:py-24 px-4">
-                <h1 id="hero-headline" class="text-4xl md:text-6xl font-bold text-gray-800 tracking-tighter">Turn imagination into visuals in seconds.</h1>
-            </section>
-
-            <!-- NEW: Stats Section -->
-            <section id="stats-section" class="py-12 px-4">
-                <div class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-                    <div class="stat-card">
-                        <h3 class="counter text-4xl md:text-5xl font-bold text-blue-600" data-target="50">0</h3>
-                        <p class="text-sm text-gray-500 mt-2">Million+ Generations</p>
-                    </div>
-                    <div class="stat-card">
-                        <h3 class="counter text-4xl md:text-5xl font-bold text-blue-600" data-target="500">0</h3>
-                        <p class="text-sm text-gray-500 mt-2">K+ Happy Creators</p>
-                    </div>
-                    <div class="stat-card">
-                        <h3 class="text-4xl md:text-5xl font-bold text-blue-600">&lt;17s</h3>
-                        <p class="text-sm text-gray-500 mt-2">Avg. Generation Speed</p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Masonry Gallery Container -->
-            <div class="px-4">
-                <div id="masonry-gallery">
-                     <div class="masonry-column">
-                        <div class="masonry-item"><img src="https://iili.io/K7bN7Hl.md.png" class="rounded-lg w-full h-auto block" loading="eager" alt="Generated Art"></div>
-                        <div class="masonry-item"><img src="https://iili.io/K7b6OPV.md.png" class="rounded-lg w-full h-auto block" loading="lazy" alt="Generated Art"></div>
-                     </div>
-                     <div class="masonry-column">
-                        <div class="masonry-item"><img src="https://iili.io/K7bOTzP.md.png" class="rounded-lg w-full h-auto block" loading="eager" alt="Generated Art"></div>
-                        <div class="masonry-item"><img src="https://iili.io/K7be88v.md.png" class="rounded-lg w-full h-auto block" loading="lazy" alt="Generated Art"></div>
-                     </div>
-                     <div class="masonry-column">
-                        <div class="masonry-item"><img src="https://iili.io/K7yYoqN.md.png" class="rounded-lg w-full h-auto block" loading="eager" alt="Generated Art"></div>
-                        <div class="masonry-item"><img src="https://iili.io/K7b894e.md.png" class="rounded-lg w-full h-auto block" loading="lazy" alt="Generated Art"></div>
-                     </div>
-                     <div class="masonry-column">
-                        <div class="masonry-item"><img src="https://iili.io/K7bk3Ku.md.png" class="rounded-lg w-full h-auto block" loading="eager" alt="Generated Art"></div>
-                        <div class="masonry-item"><img src="https://iili.io/K7y1cUN.md.png" class="rounded-lg w-full h-auto block" loading="lazy" alt="Generated Art"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Prompt Bar -->
-        <footer class="absolute bottom-0 left-0 right-0 p-4 z-40">
-            <div class="max-w-2xl mx-auto bg-white/70 backdrop-blur-lg border border-gray-200/80 shadow-2xl rounded-full p-3 flex items-center space-x-2">
-                <div id="image-preview-container" class="hidden relative w-10 h-10 flex-shrink-0">
-                    <img id="image-preview" class="w-full h-full object-cover rounded-full" src="" alt="Image preview">
-                    <button id="remove-image-btn" class="absolute -top-1 -right-1 bg-gray-700 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-black">&times;</button>
-                </div>
-                <input type="file" id="image-upload-input" class="hidden" accept="image/png, image/jpeg">
-                <button id="image-upload-btn" class="p-2.5 rounded-full hover:bg-gray-200/70 transition-colors flex-shrink-0" title="Upload Image">
-                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
-                </button>
-                <textarea id="prompt-input" rows="1" class="w-full bg-transparent text-gray-800 placeholder-gray-500 focus:outline-none resize-none text-base py-2" placeholder="Describe your vision..."></textarea>
-                <div class="relative flex-shrink-0">
-                    <button id="ratio-btn" class="p-2.5 rounded-full hover:bg-gray-200/70 transition-colors" title="Aspect Ratio">
-                        <svg class="w-5 h-5 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
-                    </button>
-                    <div id="ratio-options" class="hidden absolute bottom-full right-0 mb-2 w-48 bg-white/80 backdrop-blur-md rounded-lg border border-gray-200/80 shadow-xl p-1">
-                        <button class="ratio-option selected w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-blue-500 hover:text-white rounded-md" data-ratio="1:1">Square <span class="text-xs opacity-60">1:1</span></button>
-                        <button class="ratio-option w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-blue-500 hover:text-white rounded-md" data-ratio="16:9">Landscape <span class="text-xs opacity-60">16:9</span></button>
-                        <button class="ratio-option w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-blue-500 hover:text-white rounded-md" data-ratio="9:16">Portrait <span class="text-xs opacity-60">9:16</span></button>
-                        <button class="ratio-option w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-blue-500 hover:text-white rounded-md" data-ratio="4:5">Instagram <span class="text-xs opacity-60">4:5</span></button>
-                    </div>
-                </div>
-                <button id="generate-btn" class="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700 transition-all duration-300 flex-shrink-0 disabled:bg-blue-400" aria-label="Generate">
-                    <svg id="generate-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7"></path></svg>
-                    <svg id="loading-spinner" class="hidden animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                </button>
-            </div>
-        </footer>
-    </div>
+    <title>Sun Pathology - AI Admin Dashboard</title>
     
-    <!-- Modals -->
-    <div id="auth-modal" role="dialog" aria-hidden="true" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 items-center justify-center p-4" style="display: none;" onclick="this.setAttribute('aria-hidden', 'true')">
-        <div class="bg-white rounded-2xl shadow-xl p-8 max-w-sm w-full text-center" onclick="event.stopPropagation()">
-            <h2 class="text-2xl font-semibold text-gray-800 mb-2">Sign In Required</h2>
-            <p class="text-gray-500 mb-6">Please sign in to continue.</p>
-            <button id="google-signin-btn" class="w-full bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-blue-700 flex items-center justify-center space-x-2"><span>Sign In with Google</span></button>
-            <button class="close-modal-btn mt-4 text-sm text-gray-500 hover:text-gray-700">Cancel</button>
-        </div>
-    </div>
-    <div id="out-of-credits-modal" role="dialog" aria-hidden="true" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 items-center justify-center p-4" style="display: none;" onclick="this.setAttribute('aria-hidden', 'true')">
-        <div class="bg-white rounded-2xl shadow-xl p-8 max-w-sm w-full text-center" onclick="event.stopPropagation()">
-            <h2 class="text-2xl font-semibold text-gray-800 mb-2">Out of Credits</h2>
-            <p class="text-gray-500 mb-6">Please purchase more to continue.</p>
-            <a href="pricing.html" class="w-full bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-blue-700 block">Buy Credits</a>
-            <button class="close-modal-btn mt-4 text-sm text-gray-500 hover:text-gray-700">Not now</button>
-        </div>
-    </div>
-    <div id="loading-overlay" class="hidden fixed inset-0 bg-black/50 backdrop-blur-md z-50 flex items-center justify-center flex-col space-y-4">
-        <p class="text-white text-lg font-medium">Generating your masterpiece...</p>
-        <div id="timer-text" class="text-white text-6xl font-bold">17s</div>
-    </div>
-    <div id="preview-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xl z-50 flex items-center justify-center p-4">
-        <div class="relative w-full max-w-6xl max-h-[90vh] bg-white rounded-xl shadow-2xl flex flex-col md:flex-row overflow-hidden">
-            <div class="md:w-2/3 h-64 md:h-auto bg-gray-100 flex items-center justify-center">
-                <img id="preview-image" src="" alt="Generated Image" class="max-w-full max-h-full object-contain">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Import Map for React & Libraries -->
+    <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@18.2.0",
+            "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+            "react-dom": "https://esm.sh/react-dom@18.2.0",
+            "lucide-react": "https://esm.sh/lucide-react@0.292.0",
+            "recharts": "https://esm.sh/recharts@2.12.0?external=react,react-dom"
+        }
+    }
+    </script>
+
+    <!-- Babel for JSX compilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .animate-fade-in { animation: fadeIn 0.4s ease-out; }
+        .animate-fade-in-up { animation: fadeInUp 0.4s ease-out; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .cursor-wait { cursor: wait; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 overflow-hidden">
+
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect, useRef } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { 
+            Phone, Users, Activity, Calendar, FileText, Settings, Mic, Play, Pause, 
+            Search, Bell, ChevronRight, MapPin, Clock, CheckCircle, AlertCircle, 
+            PhoneOutgoing, PhoneIncoming, BarChart3, TestTube, UserCog, Menu, X, 
+            MoreHorizontal, Filter, Download, MessageSquare, Navigation, Battery, 
+            Signal, Volume2, Languages, BrainCircuit, Grid, Delete, PhoneMissed
+        } from 'lucide-react';
+        import { 
+            LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+            PieChart, Pie, Cell, AreaChart, Area
+        } from 'recharts';
+
+        // --- Mock Data & Configuration ---
+
+        const COLORS = ['#0ea5e9', '#22c55e', '#f59e0b', '#ef4444'];
+
+        const MOCK_CALL_STATS = [
+            { time: '08:00', inbound: 12, outbound: 45 },
+            { time: '10:00', inbound: 35, outbound: 60 },
+            { time: '12:00', inbound: 50, outbound: 30 },
+            { time: '14:00', inbound: 45, outbound: 55 },
+            { time: '16:00', inbound: 20, outbound: 80 },
+            { time: '18:00', inbound: 15, outbound: 20 },
+        ];
+
+        const MOCK_INTENT_DATA = [
+            { name: 'Report Status', value: 45 },
+            { name: 'Home Collection', value: 25 },
+            { name: 'Pricing Query', value: 20 },
+            { name: 'Complaints', value: 10 },
+        ];
+
+        const TEST_DIRECTORY_DATA = [
+            { id: 1, name: 'Complete Blood Count (CBC)', code: 'PATH-001', price: 350, tat: '6 Hours', category: 'Hematology', sample: 'EDTA Blood' },
+            { id: 2, name: 'HbA1c (Glycosylated Hemoglobin)', code: 'PATH-045', price: 600, tat: '4 Hours', category: 'Diabetes', sample: 'Whole Blood' },
+            { id: 3, name: 'Lipid Profile', code: 'PATH-012', price: 850, tat: '12 Hours', category: 'Cardiac', sample: 'Serum' },
+            { id: 4, name: 'Thyroid Profile (T3, T4, TSH)', code: 'PATH-088', price: 550, tat: '24 Hours', category: 'Hormones', sample: 'Serum' },
+            { id: 5, name: 'Vitamin D Total', code: 'PATH-102', price: 1200, tat: '24 Hours', category: 'Vitamins', sample: 'Serum' },
+            { id: 6, name: 'Full Body Health Checkup (Gold)', code: 'PKG-GOLD', price: 2499, tat: '24 Hours', category: 'Package', sample: 'Multiple' },
+        ];
+
+        const PATIENTS_DATA = [
+            { id: 'P-1024', name: 'Rajesh Kumar', age: 45, gender: 'M', phone: '9876543210', email: 'rajesh.k@email.com', lastVisit: '2023-10-24', status: 'Report Ready', location: 'Indiranagar, Bangalore' },
+            { id: 'P-1025', name: 'Priya Sharma', age: 32, gender: 'F', phone: '9988776655', email: 'priya.s@email.com', lastVisit: '2023-10-25', status: 'Sample Collected', location: 'Koramangala, Bangalore' },
+            { id: 'P-1026', name: 'Amit Verma', age: 28, gender: 'M', phone: '9123456789', email: 'amit.v@email.com', lastVisit: '2023-10-26', status: 'Pending Collection', location: 'Whitefield, Bangalore' },
+            { id: 'P-1027', name: 'Sarah Dsouza', age: 64, gender: 'F', phone: '9845012345', email: 'sarah.d@email.com', lastVisit: '2023-10-22', status: 'Registered', location: 'MG Road, Bangalore' },
+            { id: 'P-1028', name: 'Mohd. Irfan', age: 52, gender: 'M', phone: '7890123456', email: 'irfan.m@email.com', lastVisit: '2023-10-26', status: 'Processing', location: 'Jayanagar, Bangalore' },
+        ];
+
+        const TECHNICIANS = [
+            { id: 1, name: 'Vikram Singh', status: 'On Route', currentTask: 'Sample Pickup - Sector 45', battery: 85, location: 'Sector 45, Block A', tasksDone: 4, tasksPending: 3 },
+            { id: 2, name: 'Anita Desai', status: 'Collecting', currentTask: 'Home Collection - Green Park', battery: 62, location: 'Green Park Apts', tasksDone: 6, tasksPending: 1 },
+            { id: 3, name: 'Rahul Mehta', status: 'Available', currentTask: 'Waiting for assignment', battery: 98, location: 'Lab HQ', tasksDone: 2, tasksPending: 5 },
+            { id: 4, name: 'Suresh K', status: 'Offline', currentTask: 'Shift Ended', battery: 0, location: 'Unknown', tasksDone: 8, tasksPending: 0 },
+        ];
+
+        const CALL_HISTORY = [
+            { id: 101, patient: 'Rajesh Kumar', type: 'Inbound', duration: '2m 34s', status: 'Resolved', time: '10:30 AM', date: 'Today', intent: 'Report Status' },
+            { id: 102, patient: 'Priya Sharma', type: 'Outbound', duration: '0m 45s', status: 'No Answer', time: '10:15 AM', date: 'Today', intent: 'Appointment Reminder' },
+            { id: 103, patient: 'Amit Verma', type: 'Inbound', duration: '5m 12s', status: 'Escalated', time: '09:45 AM', date: 'Today', intent: 'Pricing Query' },
+            { id: 104, patient: 'Unknown', type: 'Inbound', duration: '1m 20s', status: 'Resolved', time: '09:30 AM', date: 'Today', intent: 'Opening Hours' },
+            { id: 105, patient: 'Sarah Dsouza', type: 'Outbound', duration: '1m 55s', status: 'Resolved', time: 'Yesterday', date: 'Yesterday', intent: 'Report Ready' },
+        ];
+
+        // --- Components ---
+
+        const StatusBadge = ({ status }) => {
+            const styles = {
+                'Resolved': 'bg-green-100 text-green-700 border-green-200',
+                'Report Ready': 'bg-green-100 text-green-700 border-green-200',
+                'Available': 'bg-green-100 text-green-700 border-green-200',
+                'Escalated': 'bg-red-100 text-red-700 border-red-200',
+                'No Answer': 'bg-amber-100 text-amber-700 border-amber-200',
+                'Collecting': 'bg-amber-100 text-amber-700 border-amber-200',
+                'Pending Collection': 'bg-amber-100 text-amber-700 border-amber-200',
+                'On Route': 'bg-blue-100 text-blue-700 border-blue-200',
+                'Sample Collected': 'bg-blue-100 text-blue-700 border-blue-200',
+                'Offline': 'bg-slate-100 text-slate-600 border-slate-200',
+                'Registered': 'bg-slate-100 text-slate-600 border-slate-200',
+                'Processing': 'bg-purple-100 text-purple-700 border-purple-200',
+            };
+            return (
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${styles[status] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                    {status}
+                </span>
+            );
+        };
+
+        const Card = ({ children, className = "" }) => (
+            <div className={`bg-white rounded-xl border border-slate-200 shadow-sm ${className}`}>
+                {children}
             </div>
-            <div class="md:w-1/3 p-6 flex flex-col">
-                <h3 class="text-lg font-bold text-gray-800">Edit & Regenerate</h3>
-                <div id="preview-input-image-container" class="hidden mt-4">
-                    <label class="text-sm font-semibold text-gray-500">YOUR UPLOADED IMAGE</label>
-                    <div class="relative mt-2">
-                        <img id="preview-input-image" src="" class="w-24 h-24 object-cover rounded-lg">
-                        <div class="absolute top-2 right-2 flex flex-col space-y-1">
-                            <button id="change-input-image-btn" class="bg-white/80 p-1 rounded-full text-gray-700 hover:bg-white"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5m-4-1v-4m0 0H8m4 0h4m-4 4v4m0 0H8m4 0h4m-4-4l-4-4m8 8l4-4"></path></svg></button>
-                            <input type="file" id="preview-image-upload-input" class="hidden" accept="image/png, image/jpeg">
-                            <button id="remove-input-image-btn" class="bg-white/80 p-1 rounded-full text-gray-700 hover:bg-white"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+        );
+
+        const Toast = ({ message, onClose }) => (
+            <div className="fixed bottom-6 right-6 bg-slate-800 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 z-[60] animate-fade-in-up">
+                <div className="bg-green-500 rounded-full p-1">
+                    <CheckCircle className="w-3 h-3 text-white" />
+                </div>
+                <span className="text-sm font-medium">{message}</span>
+                <button onClick={onClose} className="text-slate-400 hover:text-white ml-2">
+                    <X className="w-4 h-4" />
+                </button>
+            </div>
+        );
+
+        const Dialer = ({ isOpen, onClose, onCall }) => {
+            const [number, setNumber] = useState('');
+            const [calling, setCalling] = useState(false);
+
+            if (!isOpen) return null;
+
+            const handleNum = (n) => setNumber(prev => prev + n);
+            const handleDelete = () => setNumber(prev => prev.slice(0, -1));
+            const handleCall = () => {
+                if (!number) return;
+                setCalling(true);
+                setTimeout(() => {
+                    onCall(number);
+                    setCalling(false);
+                    setNumber('');
+                    onClose();
+                }, 1500);
+            };
+
+            return (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm">
+                    <div className="bg-white w-80 rounded-2xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all scale-100">
+                        <div className="bg-slate-50 p-4 border-b border-slate-100 flex justify-between items-center">
+                            <h3 className="font-bold text-slate-700 flex items-center gap-2">
+                                <Phone className="w-4 h-4 text-blue-600" /> Softphone
+                            </h3>
+                            <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
+                        </div>
+                        
+                        <div className="p-6">
+                            <div className="bg-slate-100 rounded-xl p-4 mb-6 text-center h-16 flex items-center justify-center overflow-hidden relative">
+                                <span className="text-2xl font-bold text-slate-800 tracking-widest">{number || <span className="text-slate-300 text-lg font-normal">Enter Number...</span>}</span>
+                                {number && (
+                                    <button onClick={handleDelete} className="absolute right-3 text-slate-400 hover:text-red-500">
+                                        <Delete className="w-5 h-5" />
+                                    </button>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-4 mb-6">
+                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, '*', 0, '#'].map((n) => (
+                                    <button 
+                                        key={n} 
+                                        onClick={() => handleNum(n)}
+                                        className="h-12 rounded-full bg-white border border-slate-200 text-lg font-bold text-slate-700 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 transition-colors"
+                                    >
+                                        {n}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <button 
+                                onClick={handleCall}
+                                disabled={calling}
+                                className={`w-full py-3 rounded-xl font-bold text-white flex items-center justify-center gap-2 shadow-lg shadow-green-200 transition-all ${calling ? 'bg-slate-400 cursor-wait' : 'bg-green-500 hover:bg-green-600 active:scale-95'}`}
+                            >
+                                {calling ? 'Dialing...' : <><Phone className="w-5 h-5" /> Call Now</>}
+                            </button>
                         </div>
                     </div>
                 </div>
-                <div class="mt-4 flex-grow flex flex-col">
-                    <label class="text-sm font-semibold text-gray-500" for="preview-prompt-input">PROMPT</label>
-                    <textarea id="preview-prompt-input" rows="5" class="mt-2 w-full text-gray-800 bg-gray-100 p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition flex-grow"></textarea>
+            );
+        };
+
+        // --- Sidebar ---
+        const Sidebar = ({ activeTab, setActiveTab, mobileOpen, setMobileOpen }) => {
+            const menuItems = [
+                { id: 'dashboard', label: 'Dashboard', icon: Activity },
+                { id: 'live-calls', label: 'Live Monitor', icon: PhoneIncoming },
+                { id: 'history', label: 'Call History', icon: FileText },
+                { id: 'campaigns', label: 'Campaigns', icon: PhoneOutgoing },
+                { id: 'patients', label: 'Patients', icon: Users },
+                { id: 'tests', label: 'Tests', icon: TestTube },
+                { id: 'technicians', label: 'Technicians', icon: MapPin },
+                { id: 'ai-config', label: 'AI Config', icon: UserCog },
+            ];
+
+            return (
+                <div className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200 transform transition-transform duration-300 ease-in-out ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 shadow-lg md:shadow-none`}>
+                    <div className="h-16 flex items-center px-6 border-b border-slate-100">
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-blue-200 shadow-md">
+                                <Activity className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                                <h1 className="font-bold text-xl text-slate-900 leading-none tracking-tight">Sun<span className="text-blue-600">Pathology</span></h1>
+                                <p className="text-[10px] text-slate-400 font-medium tracking-wider uppercase mt-1">Science City</p>
+                            </div>
+                        </div>
+                        <button onClick={() => setMobileOpen(false)} className="md:hidden ml-auto text-slate-400">
+                            <X className="w-6 h-6" />
+                        </button>
+                    </div>
+                    
+                    <div className="py-6 px-4 space-y-1.5">
+                        <p className="px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Main Menu</p>
+                        {menuItems.map((item) => (
+                            <button
+                                key={item.id}
+                                onClick={() => { setActiveTab(item.id); setMobileOpen(false); }}
+                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 group ${
+                                    activeTab === item.id 
+                                        ? 'bg-blue-50 text-blue-700 shadow-sm border border-blue-100' 
+                                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent'
+                                }`}
+                            >
+                                <item.icon className={`w-5 h-5 transition-colors ${activeTab === item.id ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600'}`} />
+                                {item.label}
+                                {item.id === 'live-calls' && (
+                                    <span className="ml-auto flex h-2 w-2 relative">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                                    </span>
+                                )}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="absolute bottom-0 left-0 w-full p-4 border-t border-slate-100 bg-slate-50">
+                        <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-white hover:shadow-sm transition-all cursor-pointer">
+                            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-sm border-2 border-white shadow-sm">
+                                AD
+                            </div>
+                            <div className="flex-1 overflow-hidden">
+                                <p className="text-sm font-bold text-slate-900 truncate">Dr. A. Deshmukh</p>
+                                <p className="text-xs text-slate-500 truncate">Lab Admin • Science City</p>
+                            </div>
+                            <Settings className="w-4 h-4 text-slate-400" />
+                        </div>
+                    </div>
                 </div>
-                <div class="mt-4">
-                    <button id="regenerate-btn" class="w-full bg-blue-600 text-white font-semibold py-3 px-5 rounded-lg hover:bg-blue-700 transition-colors shadow-lg flex items-center justify-center space-x-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 9a9 9 0 0114.13-5.22M20 15a9 9 0 01-14.13 5.22"></path></svg>
-                        <span>Regenerate</span>
+            );
+        };
+
+        // --- Header ---
+        const Header = ({ title, setMobileOpen, onOpenDialer, onAction }) => (
+            <header className="h-16 bg-white/80 backdrop-blur-sm border-b border-slate-200 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-20">
+                <div className="flex items-center gap-4">
+                    <button onClick={() => setMobileOpen(true)} className="md:hidden text-slate-500 hover:bg-slate-100 p-2 rounded-lg">
+                        <Menu className="w-6 h-6" />
+                    </button>
+                    <div className="flex flex-col">
+                        <h1 className="text-xl font-bold text-slate-800 tracking-tight">{title}</h1>
+                        <p className="text-xs text-slate-500 hidden sm:block flex items-center gap-1">
+                            <MapPin className="w-3 h-3 text-blue-500" /> Science City Main Branch, Ahmedabad
+                        </p>
+                    </div>
+                </div>
+                
+                <div className="flex items-center gap-3 sm:gap-4">
+                    <button 
+                        onClick={onOpenDialer}
+                        className="hidden md:flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-full text-sm font-bold shadow-md hover:bg-slate-800 hover:scale-105 transition-all"
+                    >
+                        <PhoneOutgoing className="w-4 h-4" /> New Call
+                    </button>
+
+                    <div className="flex items-center gap-2 border-l border-slate-200 pl-4 ml-2">
+                        <button onClick={() => onAction("Opening Inbox...")} className="relative p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
+                            <MessageSquare className="w-5 h-5" />
+                        </button>
+                        <button onClick={() => onAction("Checking Notifications...")} className="relative p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
+                            <Bell className="w-5 h-5" />
+                            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                        </button>
+                    </div>
+                </div>
+            </header>
+        );
+
+        // --- Dashboard View ---
+        const DashboardView = ({ onNavigate, onAction }) => (
+            <div className="space-y-6 animate-fade-in">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[
+                        { label: 'Total Calls Today', value: '1,248', sub: '+12% vs yesterday', color: 'bg-blue-500', icon: Phone, trend: 'up' },
+                        { label: 'AI Resolution Rate', value: '94.2%', sub: 'Calls handled autonomously', color: 'bg-green-500', icon: CheckCircle, trend: 'up' },
+                        { label: 'Pending Collections', value: '18', sub: '3 urgent pickups', color: 'bg-amber-500', icon: MapPin, trend: 'down' },
+                        { label: 'Reports Generated', value: '342', sub: 'Ready for dispatch', color: 'bg-indigo-500', icon: FileText, trend: 'up' },
+                    ].map((stat, idx) => (
+                        <Card key={idx} className="p-6 hover:shadow-md transition-shadow cursor-default">
+                            <div className="flex items-start justify-between">
+                                <div>
+                                    <p className="text-slate-500 text-sm font-semibold uppercase tracking-wide">{stat.label}</p>
+                                    <h3 className="text-3xl font-bold text-slate-900 mt-2 tracking-tight">{stat.value}</h3>
+                                    <div className={`flex items-center gap-1 mt-1.5 text-xs font-medium ${stat.trend === 'up' || stat.label === 'Pending Collections' ? 'text-emerald-600' : 'text-red-600'}`}>
+                                        {stat.sub}
+                                    </div>
+                                </div>
+                                <div className={`p-3 rounded-xl ${stat.color} bg-opacity-10`}>
+                                    <stat.icon className={`w-6 h-6 text-${stat.color.replace('bg-', '')}`} />
+                                </div>
+                            </div>
+                        </Card>
+                    ))}
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <Card className="lg:col-span-2 p-6">
+                        <div className="flex justify-between items-center mb-6">
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-800">Hourly Call Volume</h3>
+                                <p className="text-sm text-slate-500">Inbound vs Outbound traffic analysis</p>
+                            </div>
+                            <select className="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-100 cursor-pointer">
+                                <option>Today</option>
+                                <option>Yesterday</option>
+                                <option>Last 7 Days</option>
+                            </select>
+                        </div>
+                        <div className="h-80 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={MOCK_CALL_STATS}>
+                                    <defs>
+                                        <linearGradient id="colorInbound" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.1}/>
+                                            <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0}/>
+                                        </linearGradient>
+                                        <linearGradient id="colorOutbound" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#22c55e" stopOpacity={0.1}/>
+                                            <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                    <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
+                                    <Tooltip 
+                                        contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', padding: '12px'}} 
+                                        itemStyle={{fontSize: '12px', fontWeight: 600}}
+                                    />
+                                    <Area type="monotone" dataKey="inbound" stroke="#0ea5e9" strokeWidth={3} fillOpacity={1} fill="url(#colorInbound)" />
+                                    <Area type="monotone" dataKey="outbound" stroke="#22c55e" strokeWidth={3} fillOpacity={1} fill="url(#colorOutbound)" />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </Card>
+
+                    <Card className="p-6 flex flex-col">
+                        <h3 className="text-lg font-bold text-slate-800 mb-2">Patient Intent</h3>
+                        <p className="text-sm text-slate-500 mb-6">What are patients calling about?</p>
+                        <div className="h-64 w-full flex-1">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={MOCK_INTENT_DATA}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={80}
+                                        paddingAngle={5}
+                                        dataKey="value"
+                                    >
+                                        {MOCK_INTENT_DATA.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                        <div className="space-y-4 mt-4">
+                            {MOCK_INTENT_DATA.map((item, idx) => (
+                                <div key={idx} className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg transition-colors">
+                                    <div className="flex items-center gap-3">
+                                        <span className="w-3 h-3 rounded-full" style={{backgroundColor: COLORS[idx]}}></span>
+                                        <span className="text-sm font-medium text-slate-700">{item.name}</span>
+                                    </div>
+                                    <span className="text-sm font-bold text-slate-900">{item.value}%</span>
+                                </div>
+                            ))}
+                        </div>
+                    </Card>
+                </div>
+
+                <Card className="p-6">
+                    <div className="flex justify-between items-center mb-6">
+                        <div>
+                            <h3 className="text-lg font-bold text-slate-800">Live Operations Feed</h3>
+                            <p className="text-sm text-slate-500">Real-time AI interactions and task updates</p>
+                        </div>
+                        <button onClick={() => onNavigate('history')} className="text-sm text-blue-600 font-bold hover:text-blue-700 flex items-center gap-1 transition-colors">
+                            View Full Log <ChevronRight className="w-4 h-4" />
+                        </button>
+                    </div>
+                    <div className="space-y-0">
+                        {[
+                            { time: '2 mins ago', type: 'Inbound', patient: 'Mrs. Gupta', status: 'Resolved', detail: 'Asked for Lipid Profile report. AI sent PDF via WhatsApp.' },
+                            { time: '5 mins ago', type: 'Outbound', patient: 'Mr. Khan', status: 'No Answer', detail: 'Appointment reminder call. Will retry in 1 hour.' },
+                            { time: '12 mins ago', type: 'Inbound', patient: 'S. Reddy', status: 'Escalated', detail: 'Complaint regarding home collection delay. Forwarded to Ops.' },
+                            { time: '18 mins ago', type: 'Ops', patient: 'Vikram Singh', status: 'Sample Collected', detail: 'Completed pickup at Sector 45. En route to lab.' },
+                        ].map((activity, idx) => (
+                            <div key={idx} className="flex items-start gap-4 p-4 hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0">
+                                <div className={`mt-1 p-2.5 rounded-full shrink-0 ${activity.type === 'Inbound' ? 'bg-blue-100 text-blue-600' : activity.type === 'Ops' ? 'bg-indigo-100 text-indigo-600' : 'bg-green-100 text-green-600'}`}>
+                                    {activity.type === 'Inbound' ? <PhoneIncoming className="w-4 h-4" /> : activity.type === 'Ops' ? <MapPin className="w-4 h-4" /> : <PhoneOutgoing className="w-4 h-4" />}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <h4 className="font-bold text-slate-800 text-sm">{activity.patient}</h4>
+                                        <span className="text-xs text-slate-400 font-medium">{activity.time}</span>
+                                    </div>
+                                    <p className="text-sm text-slate-600 leading-snug truncate">{activity.detail}</p>
+                                </div>
+                                <StatusBadge status={activity.status} />
+                            </div>
+                        ))}
+                    </div>
+                </Card>
+            </div>
+        );
+
+        // --- Live Call View ---
+        const LiveCallView = ({ onAction }) => {
+            const [transcript, setTranscript] = useState([]);
+            const [activeCall, setActiveCall] = useState(true);
+            const [humanTakeover, setHumanTakeover] = useState(false);
+            const transcriptRef = useRef(null);
+            
+            useEffect(() => {
+                if (!activeCall) return;
+                
+                const conversation = [
+                    { role: 'AI', text: "Namaste, this is Sun Pathology Lab Science City Branch. How can I help you?", delay: 1000 },
+                    { role: 'Patient', text: "Hi, I gave my blood sample this morning. When will I get the report?", delay: 3000 },
+                    { role: 'AI', text: "I can check that for you. Could you please confirm if you are calling from the registered mobile number?", delay: 5000 },
+                    { role: 'Patient', text: "Yes, this is the same number.", delay: 7000 },
+                    { role: 'AI', text: "Thank you, Mrs. Sharma. I see a Thyroid Profile collected at 9:30 AM.", delay: 9000 },
+                    { role: 'AI', text: "Your reports are currently being verified by our Pathologist.", delay: 11000 },
+                    { role: 'AI', text: "They will be ready by 5:00 PM. Would you like me to WhatsApp them?", delay: 14000 },
+                    { role: 'Patient', text: "Yes please, that would be great.", delay: 17000 },
+                ];
+
+                let currentIndex = 0;
+                const interval = setInterval(() => {
+                    if (currentIndex < conversation.length && !humanTakeover) {
+                        const item = conversation[currentIndex];
+                        setTranscript(prev => [...prev, item]);
+                        currentIndex++;
+                    } else if (!humanTakeover) {
+                        clearInterval(interval);
+                    }
+                }, 2500);
+
+                return () => clearInterval(interval);
+            }, [activeCall, humanTakeover]);
+
+            useEffect(() => {
+                if (transcriptRef.current) {
+                    transcriptRef.current.scrollTop = transcriptRef.current.scrollHeight;
+                }
+            }, [transcript]);
+
+            const handleTakeOver = () => {
+                setHumanTakeover(!humanTakeover);
+                onAction(humanTakeover ? "AI Resumed Control" : "Human Agent Took Control");
+            };
+
+            const handleEndSession = () => {
+                setTranscript([]);
+                setActiveCall(false);
+                onAction("Session Ended");
+            };
+
+            return (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-9rem)]">
+                    <Card className="flex flex-col overflow-hidden h-full border-0 lg:border lg:border-slate-200">
+                        <div className="p-4 border-b border-slate-100 bg-slate-50/50">
+                            <div className="flex justify-between items-center">
+                                <h3 className="font-bold text-slate-800">Active Channels</h3>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold text-green-600 bg-green-100 px-2 py-0.5 rounded-full border border-green-200">3 Live</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="overflow-y-auto flex-1 p-3 space-y-3">
+                            <div className={`p-4 bg-gradient-to-br from-blue-50 to-white border border-blue-200 rounded-xl shadow-sm cursor-pointer ring-2 ${humanTakeover ? 'ring-red-400' : 'ring-blue-500'} ring-opacity-20`}>
+                                <div className="flex justify-between items-start mb-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold">AS</div>
+                                        <div>
+                                            <span className="font-bold text-slate-900 block">Mrs. A. Sharma</span>
+                                            <span className="text-xs text-blue-600 font-medium flex items-center gap-1">
+                                                <PhoneIncoming className="w-3 h-3" /> +91 98*** **123
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <span className="text-xs font-mono font-bold bg-blue-100 text-blue-800 px-2 py-1 rounded">00:42</span>
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-xs text-slate-500 font-medium">
+                                        <span>Confidence</span>
+                                        <span>{humanTakeover ? 'N/A (Manual)' : '98%'}</span>
+                                    </div>
+                                    <div className="w-full bg-blue-100 h-1.5 rounded-full overflow-hidden">
+                                        <div className={`h-full w-[98%] shadow-[0_0_10px_rgba(59,130,246,0.5)] ${humanTakeover ? 'bg-red-500' : 'bg-blue-500'}`}></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <Card className="lg:col-span-2 flex flex-col overflow-hidden h-full border-0 lg:border lg:border-slate-200">
+                        <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-white shadow-sm z-10">
+                            <div className="flex items-center gap-4">
+                                <div className={`w-3 h-3 rounded-full ${activeCall ? 'bg-red-500 animate-pulse' : 'bg-slate-300'}`}></div>
+                                <div>
+                                    <h2 className="text-lg font-bold text-slate-800">Live Monitor</h2>
+                                    <p className="text-xs text-slate-500 font-medium">Session ID: #AI-99281 • Mrs. Sharma</p>
+                                </div>
+                            </div>
+                            <div className="flex gap-3">
+                                <button onClick={handleTakeOver} className={`border px-4 py-2 rounded-lg text-sm font-bold transition-colors flex items-center gap-2 shadow-sm ${humanTakeover ? 'bg-red-600 text-white border-red-600 hover:bg-red-700' : 'bg-white border-red-200 text-red-600 hover:bg-red-50'}`}>
+                                    <Mic className="w-4 h-4" /> {humanTakeover ? 'Release Control' : 'Take Over'}
+                                </button>
+                                <button onClick={handleEndSession} className="bg-slate-800 text-white hover:bg-slate-900 px-4 py-2 rounded-lg text-sm font-bold transition-colors shadow-lg shadow-slate-200">
+                                    End Session
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50" ref={transcriptRef}>
+                            {transcript.map((line, idx) => (
+                                <div key={idx} className={`flex ${line.role === 'AI' ? 'justify-start' : 'justify-end'}`}>
+                                    <div className={`flex max-w-[80%] ${line.role === 'AI' ? 'flex-row' : 'flex-row-reverse'} gap-3`}>
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm ${line.role === 'AI' ? 'bg-white border border-blue-100 text-blue-600' : 'bg-blue-600 text-white'}`}>
+                                            {line.role === 'AI' ? <BrainCircuit className="w-4 h-4" /> : <Users className="w-4 h-4" />}
+                                        </div>
+                                        <div className={`p-4 rounded-2xl shadow-sm text-sm leading-relaxed ${line.role === 'AI' ? 'bg-white text-slate-700 rounded-tl-none border border-slate-200' : 'bg-blue-600 text-white rounded-tr-none shadow-blue-200'}`}>
+                                            <p>{line.text}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            {transcript.length === 0 && activeCall && (
+                                <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-4">
+                                    <div className="relative">
+                                        <div className="w-16 h-16 border-4 border-blue-100 rounded-full animate-ping absolute"></div>
+                                        <div className="w-16 h-16 bg-white border-2 border-blue-500 rounded-full flex items-center justify-center relative z-10">
+                                            <PhoneIncoming className="w-8 h-8 text-blue-500" />
+                                        </div>
+                                    </div>
+                                    <p className="font-medium">Establishing secure voice gateway...</p>
+                                </div>
+                            )}
+                        </div>
+                    </Card>
+                </div>
+            );
+        };
+
+        // --- Patients View ---
+        const PatientsView = ({ onAction }) => {
+            const [searchTerm, setSearchTerm] = useState("");
+            const filteredPatients = PATIENTS_DATA.filter(p => 
+                p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                p.phone.includes(searchTerm)
+            );
+
+            return (
+                <div className="space-y-6 animate-fade-in">
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-800">Patient Records</h2>
+                            <p className="text-sm text-slate-500">Manage patient history and AI interactions</p>
+                        </div>
+                        <div className="flex gap-3">
+                            <div className="bg-white border border-slate-300 rounded-lg px-3 py-2 flex items-center gap-2 focus-within:border-blue-500 transition-colors">
+                                <Search className="w-4 h-4 text-slate-400" />
+                                <input 
+                                    className="text-sm outline-none text-slate-700 w-48" 
+                                    placeholder="Filter by name..." 
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+                            <button onClick={() => onAction("Opening Registration Modal")} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 shadow-md shadow-blue-200 transition-all">
+                                + Register Patient
+                            </button>
+                        </div>
+                    </div>
+
+                    <Card className="overflow-hidden">
+                        <table className="w-full text-left text-sm">
+                            <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
+                                <tr>
+                                    <th className="px-6 py-4 font-semibold">Patient Details</th>
+                                    <th className="px-6 py-4 font-semibold">Contact</th>
+                                    <th className="px-6 py-4 font-semibold">Location</th>
+                                    <th className="px-6 py-4 font-semibold">Last Visit</th>
+                                    <th className="px-6 py-4 font-semibold">Current Status</th>
+                                    <th className="px-6 py-4 font-semibold">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {filteredPatients.map((patient) => (
+                                    <tr key={patient.id} className="hover:bg-slate-50 transition-colors group">
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-slate-600 font-bold border border-slate-200">
+                                                    {patient.name.split(' ').map(n => n[0]).join('')}
+                                                </div>
+                                                <div>
+                                                    <div className="font-bold text-slate-900">{patient.name}</div>
+                                                    <div className="text-xs text-slate-500">{patient.age} Y / {patient.gender} • ID: {patient.id}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="text-slate-700 font-medium flex items-center gap-1"><Phone className="w-3 h-3 text-slate-400"/> {patient.phone}</div>
+                                            <div className="text-xs text-slate-400">{patient.email}</div>
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-600">
+                                            {patient.location}
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-600 font-medium">{patient.lastVisit}</td>
+                                        <td className="px-6 py-4">
+                                            <StatusBadge status={patient.status} />
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <button onClick={() => onAction(`Calling ${patient.name}...`)} className="text-slate-400 hover:text-blue-600 transition-colors bg-slate-100 p-2 rounded-full hover:bg-blue-50">
+                                                <PhoneOutgoing className="w-4 h-4" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        {/* Pagination Footer */}
+                        <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-between items-center text-sm text-slate-500">
+                            <span>Showing {filteredPatients.length} records</span>
+                            <div className="flex gap-2">
+                                <button onClick={() => onAction("Loading previous page...")} className="px-3 py-1 border border-slate-300 rounded bg-white hover:bg-slate-50">Previous</button>
+                                <button onClick={() => onAction("Loading next page...")} className="px-3 py-1 border border-slate-300 rounded bg-white hover:bg-slate-50">Next</button>
+                            </div>
+                        </div>
+                    </Card>
+                </div>
+            );
+        };
+
+        // --- Technicians View ---
+        const TechniciansView = ({ onAction }) => (
+            <div className="space-y-6 animate-fade-in">
+                <div className="flex justify-between items-center">
+                    <div>
+                        <h2 className="text-xl font-bold text-slate-800">Field Operations</h2>
+                        <p className="text-sm text-slate-500">Live tracking of Phlebotomists and Home Collections</p>
+                    </div>
+                    <button onClick={() => onAction("Generating Route Optimization Report...")} className="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 flex items-center gap-2">
+                        <Download className="w-4 h-4" /> Route Report
                     </button>
                 </div>
-            </div>
-            <div class="absolute top-4 right-4 md:right-auto md:left-4 flex space-x-2">
-                 <button id="download-btn" class="bg-white/80 text-gray-800 p-2.5 rounded-full hover:bg-white shadow-md transition-transform hover:scale-105" title="Download Image">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                </button>
-                <button id="close-preview-btn" class="bg-white/80 text-gray-800 p-2.5 rounded-full hover:bg-white shadow-md transition-transform hover:scale-105" title="Close">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-        </div>
-    </div>
 
-    <script type="module" src="script.js"></script>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <Card className="lg:col-span-2 h-[500px] bg-slate-100 relative overflow-hidden flex items-center justify-center group cursor-pointer" onClick={() => onAction("Zooming into Live Map...")}>
+                        <div className="absolute inset-0 opacity-10 bg-[url('https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/Google_Maps_Logo_2020.svg/2275px-Google_Maps_Logo_2020.svg.png')] bg-cover bg-center"></div>
+                        <div className="text-center z-10">
+                            <div className="bg-white p-4 rounded-full shadow-xl mb-4 inline-block">
+                                <MapPin className="w-8 h-8 text-blue-600" />
+                            </div>
+                            <h3 className="text-lg font-bold text-slate-800">Live Map View</h3>
+                            <p className="text-slate-500">Science City Area Coverage</p>
+                        </div>
+                        <div className="absolute top-1/4 left-1/4 bg-white p-2 rounded-lg shadow-lg border border-slate-200 flex items-center gap-2 animate-bounce" style={{animationDuration: '3s'}}>
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <span className="text-xs font-bold text-slate-700">Vikram (Sec 45)</span>
+                        </div>
+                        <div className="absolute bottom-1/3 right-1/3 bg-white p-2 rounded-lg shadow-lg border border-slate-200 flex items-center gap-2" >
+                            <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                            <span className="text-xs font-bold text-slate-700">Anita (Traffic)</span>
+                        </div>
+                    </Card>
+
+                    <Card className="flex flex-col h-[500px]">
+                        <div className="p-4 border-b border-slate-100 bg-slate-50">
+                            <h3 className="font-bold text-slate-800">Active Agents (4)</h3>
+                        </div>
+                        <div className="overflow-y-auto flex-1 p-3 space-y-3">
+                            {TECHNICIANS.map(tech => (
+                                <div key={tech.id} className="p-4 bg-white border border-slate-200 rounded-xl hover:shadow-md transition-shadow">
+                                    <div className="flex justify-between items-start mb-3">
+                                        <div>
+                                            <h4 className="font-bold text-slate-800">{tech.name}</h4>
+                                            <div className="flex items-center gap-1 text-xs text-slate-500 mt-0.5">
+                                                <Navigation className="w-3 h-3" /> {tech.location}
+                                            </div>
+                                        </div>
+                                        <StatusBadge status={tech.status} />
+                                    </div>
+                                    <div className="mb-3">
+                                        <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mb-1">Current Task</p>
+                                        <p className="text-sm font-medium text-slate-700">{tech.currentTask}</p>
+                                    </div>
+                                    <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                                        <div className="flex items-center gap-1 text-xs font-medium text-slate-600">
+                                            <CheckCircle className="w-3 h-3 text-green-500" /> {tech.tasksDone} Done
+                                        </div>
+                                        <button onClick={() => onAction(`Calling Technician ${tech.name}`)} className="text-blue-600 hover:bg-blue-50 p-1 rounded">
+                                            <PhoneOutgoing className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </Card>
+                </div>
+            </div>
+        );
+
+        // --- History View ---
+        const HistoryView = ({ onAction }) => {
+            const [playingId, setPlayingId] = useState(null);
+
+            const togglePlay = (id) => {
+                if (playingId === id) {
+                    setPlayingId(null);
+                    onAction("Playback Paused");
+                } else {
+                    setPlayingId(id);
+                    onAction("Playback Started");
+                }
+            }
+
+            return (
+            <div className="space-y-6 animate-fade-in">
+                <div className="flex justify-between items-center">
+                    <div>
+                        <h2 className="text-xl font-bold text-slate-800">Call Logs & Analytics</h2>
+                        <p className="text-sm text-slate-500">Review transcripts and audio recordings</p>
+                    </div>
+                    <div className="flex gap-3">
+                        <div className="bg-white border border-slate-200 rounded-lg px-3 py-2 flex items-center gap-2 shadow-sm">
+                            <Calendar className="w-4 h-4 text-slate-400" />
+                            <span className="text-sm text-slate-700 font-medium">Today</span>
+                        </div>
+                        <button onClick={() => onAction("Downloading CSV Log...")} className="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-50">
+                            Export CSV
+                        </button>
+                    </div>
+                </div>
+
+                <Card>
+                    <table className="w-full text-left text-sm">
+                        <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
+                            <tr>
+                                <th className="px-6 py-4 font-semibold">Time / Date</th>
+                                <th className="px-6 py-4 font-semibold">Patient</th>
+                                <th className="px-6 py-4 font-semibold">Type</th>
+                                <th className="px-6 py-4 font-semibold">Intent</th>
+                                <th className="px-6 py-4 font-semibold">Duration</th>
+                                <th className="px-6 py-4 font-semibold">Status</th>
+                                <th className="px-6 py-4 font-semibold">Recording</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {CALL_HISTORY.map(call => (
+                                <tr key={call.id} className="hover:bg-slate-50 transition-colors">
+                                    <td className="px-6 py-4">
+                                        <div className="font-medium text-slate-900">{call.time}</div>
+                                        <div className="text-xs text-slate-500">{call.date}</div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className="font-medium text-blue-600 hover:underline cursor-pointer">{call.patient}</span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center gap-2">
+                                            {call.type === 'Inbound' ? <PhoneIncoming className="w-3 h-3 text-blue-500" /> : <PhoneOutgoing className="w-3 h-3 text-green-500" />}
+                                            <span className="text-slate-700">{call.type}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-800">
+                                            {call.intent}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-slate-600 font-mono">{call.duration}</td>
+                                    <td className="px-6 py-4">
+                                        <StatusBadge status={call.status} />
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center gap-2">
+                                            <button onClick={() => togglePlay(call.id)} className={`p-1.5 rounded-full transition-colors ${playingId === call.id ? 'bg-green-100 text-green-600' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}>
+                                                {playingId === call.id ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                                            </button>
+                                            <button onClick={() => onAction("Opening Transcript Modal...")} className="p-1.5 rounded-full bg-slate-50 text-slate-600 hover:bg-slate-100 transition-colors">
+                                                <FileText className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </Card>
+            </div>
+            );
+        };
+
+        // --- Campaign View ---
+        const CampaignView = ({ onAction }) => {
+            const [isPaused, setIsPaused] = useState(false);
+
+            return (
+                <div className="space-y-6 animate-fade-in">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h2 className="text-xl font-bold text-slate-800">Outbound AI Campaigns</h2>
+                        <p className="text-sm text-slate-500">Automated patient outreach & reminders</p>
+                    </div>
+                    <button onClick={() => onAction("Opening Campaign Wizard...")} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 flex items-center gap-2 shadow-md shadow-blue-200">
+                        <PhoneOutgoing className="w-4 h-4" /> Create New Campaign
+                    </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="bg-white p-6 rounded-xl border border-green-200 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+                        <div className={`absolute top-0 right-0 text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider ${isPaused ? 'bg-amber-500' : 'bg-green-500'}`}>
+                        {isPaused ? 'Paused' : 'Running Now'}
+                        </div>
+                        <div className="flex items-center gap-4 mb-4">
+                        <div className={`p-3.5 rounded-xl shadow-sm ${isPaused ? 'bg-amber-100 text-amber-600' : 'bg-green-100 text-green-600'}`}>
+                            <CheckCircle className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-slate-800 text-lg">Report Ready</h3>
+                            <p className="text-xs text-slate-500 font-medium">Daily Auto-Trigger • 5:00 PM</p>
+                        </div>
+                        </div>
+                        <div className="space-y-4 border-t border-slate-100 pt-4">
+                        <div className="flex justify-between text-sm">
+                            <span className="text-slate-500 font-medium">Audience</span>
+                            <span className="font-bold text-slate-900">Reports Verified</span>
+                        </div>
+                        <div className="space-y-1">
+                            <div className="flex justify-between text-xs text-slate-500 mb-1">
+                                <span>Progress</span>
+                                <span>342 / 400</span>
+                            </div>
+                            <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                                <div className={`h-full w-[85%] rounded-full transition-all ${isPaused ? 'bg-amber-500' : 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]'}`}></div>
+                            </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4 pt-2">
+                            <div className="text-center p-2 bg-slate-50 rounded-lg border border-slate-100">
+                                <div className="text-lg font-bold text-slate-800">85%</div>
+                                <div className="text-[10px] text-slate-400 uppercase font-bold">Connected</div>
+                            </div>
+                            <div className="text-center p-2 bg-slate-50 rounded-lg border border-slate-100">
+                                <div className="text-lg font-bold text-slate-800">12s</div>
+                                <div className="text-[10px] text-slate-400 uppercase font-bold">Avg Dur</div>
+                            </div>
+                        </div>
+                        </div>
+                        <div className="mt-6 flex gap-2">
+                        <button onClick={() => { setIsPaused(!isPaused); onAction(isPaused ? "Campaign Resumed" : "Campaign Paused"); }} className="flex-1 bg-white border border-slate-200 text-slate-700 py-2 rounded-lg text-sm font-bold hover:bg-slate-50 transition-colors">
+                            {isPaused ? 'Resume' : 'Pause'}
+                        </button>
+                        <button onClick={() => onAction("Navigating to Logs...")} className="flex-1 bg-white border border-slate-200 text-slate-700 py-2 rounded-lg text-sm font-bold hover:bg-slate-50 transition-colors">View Logs</button>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden hover:shadow-md transition-all">
+                        <div className="absolute top-0 right-0 bg-amber-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider">
+                        Scheduled
+                        </div>
+                        <div className="flex items-center gap-4 mb-4">
+                        <div className="p-3.5 bg-amber-100 rounded-xl text-amber-600 shadow-sm">
+                            <Calendar className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-slate-800 text-lg">Diabetic Checkup</h3>
+                            <p className="text-xs text-slate-500 font-medium">Tomorrow • 10:00 AM</p>
+                        </div>
+                        </div>
+                        <div className="space-y-4 border-t border-slate-100 pt-4">
+                        <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                            <p className="text-xs text-slate-400 uppercase font-bold mb-1">Script Preview</p>
+                            <p className="text-sm text-slate-600 italic line-clamp-3">
+                            "Namaste [Name], this is Sun Pathology. It has been 3 months since your last HbA1c test. Would you like to book a home collection?"
+                            </p>
+                        </div>
+                        <div className="flex justify-between text-sm pt-2">
+                            <span className="text-slate-500 font-medium">Est. Audience</span>
+                            <span className="font-bold text-slate-900">~1,200 Patients</span>
+                        </div>
+                        </div>
+                        <div className="mt-6">
+                        <button onClick={() => onAction("Opening Config Editor...")} className="w-full bg-white border border-slate-200 text-slate-700 py-2 rounded-lg text-sm font-bold hover:bg-slate-50 transition-colors">Edit Configuration</button>
+                        </div>
+                    </div>
+
+                    <div onClick={() => onAction("Opening New Campaign Form...")} className="border-2 border-dashed border-slate-300 rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all group">
+                        <div className="p-5 bg-slate-100 rounded-full mb-4 group-hover:bg-white group-hover:shadow-md transition-all">
+                            <PhoneOutgoing className="w-8 h-8 text-slate-400 group-hover:text-blue-500 transition-colors" />
+                        </div>
+                        <h3 className="font-bold text-slate-700 group-hover:text-blue-700">Create Custom Campaign</h3>
+                        <p className="text-sm text-slate-500 mt-2 max-w-xs">Upload CSV or select patient segment based on test history or demographics</p>
+                    </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- AI Config View ---
+        const AIConfigView = ({ onAction }) => (
+            <div className="space-y-6 animate-fade-in">
+                <div className="flex justify-between items-center">
+                    <div>
+                        <h2 className="text-xl font-bold text-slate-800">AI Assistant Configuration</h2>
+                        <p className="text-sm text-slate-500">Fine-tune voice, logic, and escalation rules</p>
+                    </div>
+                    <button onClick={() => onAction("Settings Saved Successfully")} className="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 shadow-md shadow-blue-200">
+                        Save Changes
+                    </button>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2 space-y-6">
+                        <Card className="p-6">
+                            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                <Volume2 className="w-5 h-5 text-blue-600" /> Voice & Persona
+                            </h3>
+                            
+                            <div className="grid grid-cols-2 gap-6 mb-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">Language Model</label>
+                                    <select className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-100 outline-none">
+                                        <option>SunPath-Medical-v4 (Default)</option>
+                                        <option>SunPath-Medical-Lite</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">Primary Voice</label>
+                                    <select className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-100 outline-none">
+                                        <option>Aditi (Female, Indian English, Friendly)</option>
+                                        <option>Rohan (Male, Indian English, Professional)</option>
+                                        <option>Priya (Female, Hindi/English Mix)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <div className="flex justify-between mb-1">
+                                        <label className="text-sm font-medium text-slate-700">Speaking Rate</label>
+                                        <span className="text-xs text-slate-500">1.0x (Normal)</span>
+                                    </div>
+                                    <input type="range" className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+                                </div>
+                                <div>
+                                    <div className="flex justify-between mb-1">
+                                        <label className="text-sm font-medium text-slate-700">Tone Warmth</label>
+                                        <span className="text-xs text-slate-500">High (Empathetic)</span>
+                                    </div>
+                                    <input type="range" className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600" value="80" readOnly />
+                                </div>
+                            </div>
+                        </Card>
+
+                        <Card className="p-6">
+                            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                <MessageSquare className="w-5 h-5 text-purple-600" /> Script Logic
+                            </h3>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">Greeting Message (Inbound)</label>
+                                    <textarea 
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-purple-100 outline-none font-mono text-slate-600" 
+                                        rows="3"
+                                        defaultValue="Namaste, welcome to Sun Pathology Lab - Science City Branch. I am your virtual assistant. I can help you with reports, home collection booking, or pricing. How may I assist you today?"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">Outbound Reminder Template</label>
+                                    <textarea 
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-purple-100 outline-none font-mono text-slate-600" 
+                                        rows="3"
+                                        defaultValue="Hello [Patient Name], this is a reminder from Sun Pathology for your scheduled home collection tomorrow at [Time]. Please ensure you have fasted for 10 hours."
+                                    />
+                                </div>
+                            </div>
+                        </Card>
+                    </div>
+
+                    <div className="space-y-6">
+                        <Card className="p-6">
+                            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                <Settings className="w-5 h-5 text-slate-600" /> Thresholds
+                            </h3>
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm text-slate-700">Confidence Threshold</span>
+                                    <span className="text-sm font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded">85%</span>
+                                </div>
+                                <p className="text-xs text-slate-400">If AI confidence drops below this, call is flagged for human takeover.</p>
+                                
+                                <div className="h-px bg-slate-100 my-2"></div>
+                                
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm text-slate-700">Max Retries (Outbound)</span>
+                                    <span className="text-sm font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded">3</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm text-slate-700">Silence Timeout</span>
+                                    <span className="text-sm font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded">5s</span>
+                                </div>
+                            </div>
+                        </Card>
+
+                        <Card className="p-6 bg-amber-50 border-amber-100">
+                            <h3 className="text-lg font-bold text-amber-800 mb-2 flex items-center gap-2">
+                                <AlertCircle className="w-5 h-5" /> Emergency Escalation
+                            </h3>
+                            <p className="text-sm text-amber-700 mb-4">Calls containing keywords like "Emergency", "Wrong Report", "Doctor Urgent" are immediately routed to Senior Staff.</p>
+                            <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                                <span className="text-sm font-bold text-slate-700">System Active</span>
+                            </div>
+                        </Card>
+                    </div>
+                </div>
+            </div>
+        );
+
+        // --- Test Directory View ---
+        const TestDirectoryView = ({ onAction }) => {
+            const [searchTerm, setSearchTerm] = useState("");
+            const filteredTests = TEST_DIRECTORY_DATA.filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase()) || t.code.toLowerCase().includes(searchTerm.toLowerCase()));
+
+            return (
+                <div className="space-y-6 animate-fade-in">
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-800">Test & Package Directory</h2>
+                            <p className="text-sm text-slate-500">Manage pricing, TAT, and technical details</p>
+                        </div>
+                        <div className="flex gap-2">
+                            <div className="bg-white border border-slate-300 rounded-lg px-3 py-2 flex items-center gap-2 focus-within:border-blue-500 transition-colors mr-2">
+                                <Search className="w-4 h-4 text-slate-400" />
+                                <input 
+                                    className="text-sm outline-none text-slate-700 w-32 lg:w-48" 
+                                    placeholder="Search tests..." 
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+                            <button onClick={() => onAction("Exporting Price List...")} className="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 shadow-sm">
+                                Export CSV
+                            </button>
+                        </div>
+                    </div>
+
+                    <Card className="overflow-hidden">
+                        <table className="w-full text-left text-sm">
+                            <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
+                                <tr>
+                                    <th className="px-6 py-4 font-semibold">Test Name / Code</th>
+                                    <th className="px-6 py-4 font-semibold">Category</th>
+                                    <th className="px-6 py-4 font-semibold">TAT</th>
+                                    <th className="px-6 py-4 font-semibold">Price</th>
+                                    <th className="px-6 py-4 font-semibold">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {filteredTests.map((test) => (
+                                    <tr key={test.id} className="hover:bg-slate-50 transition-colors">
+                                        <td className="px-6 py-4">
+                                            <div className="font-bold text-slate-900">{test.name}</div>
+                                            <div className="text-xs text-slate-400 font-mono mt-0.5 bg-slate-100 inline-block px-1.5 py-0.5 rounded">{test.code}</div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">{test.category}</span>
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-600">{test.tat}</td>
+                                        <td className="px-6 py-4 font-bold text-slate-900">₹{test.price}</td>
+                                        <td className="px-6 py-4">
+                                            <button className="text-blue-600 hover:text-blue-800 font-medium text-sm">Edit</button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </Card>
+                </div>
+            );
+        };
+
+        // --- Main App Component ---
+        const SunPathologyApp = () => {
+            const [activeTab, setActiveTab] = useState('dashboard');
+            const [mobileOpen, setMobileOpen] = useState(false);
+            const [notification, setNotification] = useState(null);
+            const [isDialerOpen, setIsDialerOpen] = useState(false);
+
+            const handleAction = (msg) => {
+                setNotification(msg);
+                setTimeout(() => setNotification(null), 3000);
+            };
+
+            const handleCall = (num) => {
+                handleAction(`Calling ${num}...`);
+            };
+
+            const renderView = () => {
+                switch(activeTab) {
+                    case 'dashboard': return <DashboardView onNavigate={setActiveTab} onAction={handleAction} />;
+                    case 'live-calls': return <LiveCallView onAction={handleAction} />;
+                    case 'patients': return <PatientsView onAction={handleAction} />;
+                    case 'tests': return <TestDirectoryView onAction={handleAction} />;
+                    case 'campaigns': return <CampaignView onAction={handleAction} />;
+                    case 'history': return <HistoryView onAction={handleAction} />;
+                    case 'technicians': return <TechniciansView onAction={handleAction} />;
+                    case 'ai-config': return <AIConfigView onAction={handleAction} />;
+                    default: return <DashboardView onAction={handleAction} />;
+                }
+            };
+
+            const getTitle = () => {
+                const titles = {
+                    dashboard: 'Operations Dashboard',
+                    'live-calls': 'Real-time Voice Monitor',
+                    history: 'Call History Log',
+                    campaigns: 'Outbound Campaigns',
+                    patients: 'Patient 360 Records',
+                    tests: 'Test & Package Directory',
+                    technicians: 'Field Operations',
+                    'ai-config': 'AI Voice Configuration'
+                };
+                return titles[activeTab] || 'Dashboard';
+            };
+
+            return (
+                <div className="flex h-screen bg-slate-50 font-sans text-slate-900 overflow-hidden selection:bg-blue-100">
+                    <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
+                    <div className="flex-1 flex flex-col md:ml-72 transition-all duration-300">
+                        <Header title={getTitle()} setMobileOpen={setMobileOpen} onOpenDialer={() => setIsDialerOpen(true)} onAction={handleAction} />
+                        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 scroll-smooth">
+                            <div className="max-w-[1600px] mx-auto">
+                                {renderView()}
+                            </div>
+                        </main>
+                    </div>
+                    {notification && <Toast message={notification} onClose={() => setNotification(null)} />}
+                    <Dialer isOpen={isDialerOpen} onClose={() => setIsDialerOpen(false)} onCall={handleCall} />
+                </div>
+            );
+        };
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<SunPathologyApp />);
+    </script>
 </body>
 </html>
-
-
